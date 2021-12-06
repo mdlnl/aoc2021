@@ -1,1 +1,1 @@
-from day04 import solution
+from day05 import solution
