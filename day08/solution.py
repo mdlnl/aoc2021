@@ -33,60 +33,53 @@ def part1(inp):
 assert part1(parse_all(inputs.sample)) == 26
 assert part1(parse_all(inputs.full)) == 344
 
-def signals_to_binary(sigs):
-    bin = 0
-    if 'a' in sigs:
-        bin = bin + 1
-    if 'b' in sigs:
-        bin = bin + 2
-    if 'c' in sigs:
-        bin = bin + 4
-    if 'd' in sigs:
-        bin = bin + 8
-    if 'e' in sigs:
-        bin = bin + 16
-    if 'f' in sigs:
-        bin = bin + 32
-    if 'g' in sigs:
-        bin = bin + 64
-    return bin
-
-assert signals_to_binary('abc') == 7
-
-def binary_to_signals(bin):
-    sig = ''
-    if bin & 1:
-        sig = sig + 'a'
-    if bin & 2:
-        sig = sig + 'b'
-    if bin & 4:
-        sig = sig + 'c'
-    if bin & 8:
-        sig = sig + 'd'
-    if bin & 16:
-        sig = sig + 'e'
-    if bin & 32:
-        sig = sig + 'f'
-    if bin & 64:
-        sig = sig + 'g'
-    return sig
-
-assert binary_to_signals(127) == 'abcdefg'
-
-def find_symbol_map_by_search(signals):
-    signal_map = {
-        next(s for s in signals if len(s) == 2): 1,
-        next(s for s in signals if len(s) == 4): 4,
-        next(s for s in signals if len(s) == 3): 7,
-        next(s for s in signals if len(s) == 7): 8,
-    }
-    return 0
-
-def output(signals, digits):
-    sigb = [signals_to_binary(s) for s in signals]
-    digb = [signals_to_binary(d) for d in digits]
-
 def part2(inp):
     return sum(output(signals, digits) for (signals, digits) in inp)
 
-print(part2(parse_all(inputs.sample)))
+def only_unmapped(signal_map, signals):
+    return [s for s in signals if s not in signal_map]
+
+def search(sigmap, unknowns):
+    if not unknowns:
+        return sigmap
+    n = len(unknowns[0])
+    assert n in [5, 6]
+    assert all(len(u) == n for u in unknowns)
+    g = None
+
+def subsig(s, t):
+    return set(s).issubset(set(t))
+
+def output(signals, digits):
+    one = next(s for s in signals if len(s) == 2)
+    four = next(s for s in signals if len(s) == 4)
+    seven = next(s for s in signals if len(s) == 3)
+    eight = next(s for s in signals if len(s) == 7)
+
+    # six segments
+    sixes = set(s for s in signals if len(s) == 6)
+    assert(len(sixes) == 3)
+    nine = next(s for s in sixes if subsig(four, s))
+    zero = next(s for s in sixes-{nine} if subsig(one, s))
+    six = next(s for s in sixes - {zero, nine})
+
+    fives = set(s for s in signals if len(s) == 5)
+    assert(len(fives) == 3)
+    three = next(s for s in fives if subsig(seven, s))
+    five = next(s for s in fives if subsig(s, six))
+    two = next(s for s in fives - {three, five})
+    
+    signal_map = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 }
+    return addup(signal_map, digits)
+
+def addup(sigmap, digits):
+    for d in digits:
+        if d not in sigmap:
+            raise Exception(f'Missing digit {d} in {sigmap}')
+    return sum(sigmap[digits[i]] * 10 ** (3 - i) for i in range(4))
+
+assert output(*parse('acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf')) == 5353
+
+assert part2(parse_all(inputs.sample)) == 61229
+
+print(part2(parse_all(inputs.full)))
