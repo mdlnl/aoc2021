@@ -51,29 +51,29 @@ def subsig(s, t):
     return set(s).issubset(set(t))
 
 def output(signals, digits):
-    one = next(s for s in signals if len(s) == 2): 1
-    two = None
-    three = None
-    four = next(s for s in signals if len(s) == 4): 4
-    five = None
-    six = None
-    seven = next(s for s in signals if len(s) == 3): 7
-    eight = next(s for s in signals if len(s) == 7): 8
-    nine = None
-    six_sigs = [s for s in signals if len(s) == 6]
-    assert len(six_sigs) == 2
-    if subsig(one, six_sigs[0])):
-        six = six_sigs[1]
-        nine = six_sigs[0]
-    else:
-        six = six_sigs[0]
-        nine = six_sigs[1]
-    five_sigs = [s for s in signals if len(s) == 5]
-    assert(len(five_sigs) == 3)
+    one = next(s for s in signals if len(s) == 2)
+    four = next(s for s in signals if len(s) == 4)
+    seven = next(s for s in signals if len(s) == 3)
+    eight = next(s for s in signals if len(s) == 7)
+
+    # six segments
+    sixes = set(s for s in signals if len(s) == 6)
+    assert(len(sixes) == 3)
+    nine = next(s for s in sixes if subsig(four, s))
+    zero = next(s for s in sixes-{nine} if subsig(one, s))
+    six = next(s for s in sixes - {zero, nine})
+
+    fives = set(s for s in signals if len(s) == 5)
+    assert(len(fives) == 3)
+    three = next(s for s in fives if subsig(seven, s))
+    five = next(s for s in fives if subsig(s, six))
+    two = next(s for s in fives - {three, five})
     
-    signal_map = { one: 1, four: 4, six: 6, seven: 7, eight: 8 }
-    print(signal_map)
+    signal_map = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 }
     return sum(signal_map[digits[i]] * 10 ** (3 - i) for i in range(4))
 
-print(output(*parse(inputs.sample[0])))
-# print(part2(parse_all(inputs.sample)))
+assert output(*parse('acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf')) == 5353
+
+assert part2(parse_all(inputs.sample)) == 61229
+
+print(part2(parse_all(inputs.full)))
