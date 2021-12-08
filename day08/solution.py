@@ -30,10 +30,50 @@ def part1(inp):
     digitses = [digits for (_, digits) in inp]
     return sum(count1478(digits) for digits in digitses)
 
-def part2(inp):
-    return sum(output(signals, digits) for (signals, digits) in inp)
+assert part1(parse_all(inputs.sample)) == 26
+assert part1(parse_all(inputs.full)) == 344
 
-def output(signals, digits):
+def signals_to_binary(sigs):
+    bin = 0
+    if 'a' in sigs:
+        bin = bin + 1
+    if 'b' in sigs:
+        bin = bin + 2
+    if 'c' in sigs:
+        bin = bin + 4
+    if 'd' in sigs:
+        bin = bin + 8
+    if 'e' in sigs:
+        bin = bin + 16
+    if 'f' in sigs:
+        bin = bin + 32
+    if 'g' in sigs:
+        bin = bin + 64
+    return bin
+
+assert signals_to_binary('abc') == 7
+
+def binary_to_signals(bin):
+    sig = ''
+    if bin & 1:
+        sig = sig + 'a'
+    if bin & 2:
+        sig = sig + 'b'
+    if bin & 4:
+        sig = sig + 'c'
+    if bin & 8:
+        sig = sig + 'd'
+    if bin & 16:
+        sig = sig + 'e'
+    if bin & 32:
+        sig = sig + 'f'
+    if bin & 64:
+        sig = sig + 'g'
+    return sig
+
+assert binary_to_signals(127) == 'abcdefg'
+
+def find_symbol_map_by_search(signals):
     signal_map = {
         next(s for s in signals if len(s) == 2): 1,
         next(s for s in signals if len(s) == 4): 4,
@@ -42,7 +82,11 @@ def output(signals, digits):
     }
     return 0
 
-assert part1(parse_all(inputs.sample)) == 26
-assert part1(parse_all(inputs.full)) == 344
+def output(signals, digits):
+    sigb = [signals_to_binary(s) for s in signals]
+    digb = [signals_to_binary(d) for d in digits]
+
+def part2(inp):
+    return sum(output(signals, digits) for (signals, digits) in inp)
 
 print(part2(parse_all(inputs.sample)))
