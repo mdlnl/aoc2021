@@ -37,7 +37,7 @@ def part2(inp):
     return sum(output(signals, digits) for (signals, digits) in inp)
 
 def only_unmapped(signal_map, signals):
-    return [s in signals for s not in signal_map]
+    return [s for s in signals if s not in signal_map]
 
 def output(signals, digits):
     signal_map = {
@@ -46,10 +46,9 @@ def output(signals, digits):
         next(s for s in signals if len(s) == 3): 7,
         next(s for s in signals if len(s) == 7): 8,
     }
-    return 0 +
-        signal_map(digits[0]) * 1000 +
-        signal_map(digits[1]) * 100 +
-        signal_map(digits[2]) * 10 +
-        signal_map(digits[3]) * 1
+    signals = only_unmapped(signal_map, signals)
+    print(signals)
+    return sum(signal_map[digits[i]] * 10 ** (3 - i) for i in range(4))
 
-print(part2(parse_all(inputs.sample)))
+print(output(*parse(inputs.sample[0])))
+# print(part2(parse_all(inputs.sample)))
