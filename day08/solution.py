@@ -69,8 +69,14 @@ def output(signals, digits):
     five = next(s for s in fives if subsig(s, six))
     two = next(s for s in fives - {three, five})
     
-    signal_map = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 }
-    return sum(signal_map[digits[i]] * 10 ** (3 - i) for i in range(4))
+    signal_map = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 }
+    return addup(signal_map, digits)
+
+def addup(sigmap, digits):
+    for d in digits:
+        if d not in sigmap:
+            raise Exception(f'Missing digit {d} in {sigmap}')
+    return sum(sigmap[digits[i]] * 10 ** (3 - i) for i in range(4))
 
 assert output(*parse('acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf')) == 5353
 
