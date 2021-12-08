@@ -36,17 +36,6 @@ assert part1(parse_all(inputs.full)) == 344
 def part2(inp):
     return sum(output(signals, digits) for (signals, digits) in inp)
 
-def only_unmapped(signal_map, signals):
-    return [s for s in signals if s not in signal_map]
-
-def search(sigmap, unknowns):
-    if not unknowns:
-        return sigmap
-    n = len(unknowns[0])
-    assert n in [5, 6]
-    assert all(len(u) == n for u in unknowns)
-    g = None
-
 def subsig(s, t):
     return set(s).issubset(set(t))
 
@@ -79,7 +68,6 @@ def addup(sigmap, digits):
     return sum(sigmap[digits[i]] * 10 ** (3 - i) for i in range(4))
 
 assert output(*parse('acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf')) == 5353
-
 assert part2(parse_all(inputs.sample)) == 61229
 
 print(part2(parse_all(inputs.full)))
