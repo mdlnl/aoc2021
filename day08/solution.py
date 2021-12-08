@@ -39,15 +39,40 @@ def part2(inp):
 def only_unmapped(signal_map, signals):
     return [s for s in signals if s not in signal_map]
 
+def search(sigmap, unknowns):
+    if not unknowns:
+        return sigmap
+    n = len(unknowns[0])
+    assert n in [5, 6]
+    assert all(len(u) == n for u in unknowns)
+    g = None
+
+def subsig(s, t):
+    return set(s).issubset(set(t))
+
 def output(signals, digits):
-    signal_map = {
-        next(s for s in signals if len(s) == 2): 1,
-        next(s for s in signals if len(s) == 4): 4,
-        next(s for s in signals if len(s) == 3): 7,
-        next(s for s in signals if len(s) == 7): 8,
-    }
-    signals = only_unmapped(signal_map, signals)
-    print(signals)
+    one = next(s for s in signals if len(s) == 2): 1
+    two = None
+    three = None
+    four = next(s for s in signals if len(s) == 4): 4
+    five = None
+    six = None
+    seven = next(s for s in signals if len(s) == 3): 7
+    eight = next(s for s in signals if len(s) == 7): 8
+    nine = None
+    six_sigs = [s for s in signals if len(s) == 6]
+    assert len(six_sigs) == 2
+    if subsig(one, six_sigs[0])):
+        six = six_sigs[1]
+        nine = six_sigs[0]
+    else:
+        six = six_sigs[0]
+        nine = six_sigs[1]
+    five_sigs = [s for s in signals if len(s) == 5]
+    assert(len(five_sigs) == 3)
+    
+    signal_map = { one: 1, four: 4, six: 6, seven: 7, eight: 8 }
+    print(signal_map)
     return sum(signal_map[digits[i]] * 10 ** (3 - i) for i in range(4))
 
 print(output(*parse(inputs.sample[0])))
