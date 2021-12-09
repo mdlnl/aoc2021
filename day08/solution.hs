@@ -68,7 +68,7 @@ part2 (Entry signals digits) = read $ map solution digits :: Integer
     where solution = solve signals
 
 main = do
-        input <- readFile "sample.txt"
+        input <- readFile "full.txt"
         let lines = nlsplit input
         let entries = map barsplit lines
         let answers = map part2 entries
