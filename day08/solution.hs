@@ -1,5 +1,5 @@
-import Data.List
-import Data.Set (size, fromList, isSubsetOf, singleton, difference, (\\), elems)
+import Data.List (intercalate)
+import Data.Set (Set, size, fromList, isSubsetOf, singleton, difference, (\\), elems)
 import System.IO
 
 isPrefix [] _ = True
@@ -23,13 +23,19 @@ nlsplit = split "\n"
 barsplit line = Entry (words before) (words after)
         where (before, after) = splitAtDelim " | " line
 
+only :: [a] -> a
 only [] = error "empty list"
 only [x] = x
 only _ = error "expected only one element"
 
+uniqueSize :: Int -> [Set a] -> Set a
 uniqueSize n list = only $ filter (\e -> n == (size e)) list
 
-solve signalStrings = (\sigs -> case () of
+setFilter :: (a -> Bool) -> Set a -> Set a
+setFilter f s = fromList $ filter f $ elems s
+
+solve :: [String] -> String -> Char
+solve signalStrings = (\sigString -> case () of
                            _ | sigs == zero  -> '0'
                              | sigs == one   -> '1'
                              | sigs == two   -> '2'
@@ -41,17 +47,18 @@ solve signalStrings = (\sigs -> case () of
                              | sigs == eight -> '8'
                              | sigs == nine  -> '9'
                              | otherwise     -> error "unknown signal"
+                             where sigs = fromList sigString
         )
-        where signals = fromList signalStrings
+        where signals = map fromList signalStrings
               one = uniqueSize 2 signals
               four = uniqueSize 4 signals
               seven = uniqueSize 3 signals
               eight = uniqueSize 7 signals
-              sixes = filter (\e -> (size e) == 6) signals
-              nine = only $ filter (isSubsetOf four) sixes
-              zero = only $ filter (isSubsetOf one) $ sixes \\ (sigleton four)
+              sixes = fromList $ filter (\e -> (size e) == 6) signals
+              nine = only $ filter (isSubsetOf four) $ elems sixes
+              zero = only $ filter (isSubsetOf one) $ sixes \\ (singleton four)
               six = only $ difference sixes $ fromList [zero, nine]
-              fives = filter (\e -> (size e) == 5) signals
+              fives = fromList $ filter (\e -> (size e) == 5) signals
               three = only $ filter (isSubsetOf seven) fives
               five = only $ filter (\e -> e \\ six) fives
               two = only $ difference fives $ fromList [three, five]
