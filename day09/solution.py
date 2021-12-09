@@ -7,15 +7,15 @@ def parse(lines):
     ]
 
 def neighbors(m, n, i, j):
-    nbrs = []
+    nbrs = set()
     if i > 0:
-        nbrs.append((i - 1, j))
+        nbrs.add((i - 1, j))
     if i < m - 1:
-        nbrs.append((i + 1, j))
+        nbrs.add((i + 1, j))
     if j > 0:
-        nbrs.append((i, j - 1))
+        nbrs.add((i, j - 1))
     if j < n - 1:
-        nbrs.append((i, j + 1))
+        nbrs.add((i, j + 1))
     return nbrs
         
 
@@ -25,9 +25,10 @@ def find_local_minima(height_map):
     minima = []
     for i in range(m):
         for j in range(n):
-            res = [height_map[ni][nj] > height_map[i][j] for (ni, nj) in neighbors(m, n, i, j)]
-            if all(res):
-                minima.append((i, j))
+            if all(
+                height_map[ni][nj] > height_map[i][j]
+                for (ni, nj) in neighbors(m, n, i, j)):
+                    minima.append((i, j))
     return minima
 
 def risk_level(height_map, i, j):
@@ -40,17 +41,15 @@ assert part1(parse(inputs.sample)) == 15
 assert part1(parse(inputs.full)) == 425
 
 def find_basin(height_map, i0, j0):
-    queue = [(i0, j0)]
+    queue = {(i0, j0)}
     m = len(height_map)
     n = len(height_map[0])
     basin = set()
     while queue:
-        (i, j) = queue.pop(0)
+        (i, j) = queue.pop()
         if height_map[i][j] < 9:
             basin.add((i, j))
-            for (ni, nj) in neighbors(m, n, i, j):
-                if (ni, nj) not in basin and (ni, nj) not in queue:
-                    queue.append((ni, nj))
+            queue = queue.union(neighbors(m, n, i, j) - basin)
     return basin
 
 def part2(height_map):
@@ -63,5 +62,4 @@ def part2(height_map):
     return basin_sizes[-1] * basin_sizes[-2] * basin_sizes[-3]
 
 assert part2(parse(inputs.sample)) == 1134
-
-print(part2(parse(inputs.full)))
+assert part2(parse(inputs.full)) == 1135260
