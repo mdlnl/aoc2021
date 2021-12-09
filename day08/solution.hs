@@ -1,5 +1,6 @@
 import Data.List (intercalate)
 import Data.Set (Set, size, fromList, isSubsetOf, singleton, difference, (\\), elems)
+import Debug.Trace
 import System.IO
 
 isPrefix [] _ = True
@@ -23,15 +24,15 @@ nlsplit = split "\n"
 barsplit line = Entry (words before) (words after)
         where (before, after) = splitAtDelim " | " line
 
-only :: [a] -> a
+only :: (Show a) => [a] -> a
 only [] = error "empty list"
 only [x] = x
-only _ = error "expected only one element"
+only xs = error $ "only expected only one element but got " ++ (show xs)
 
-uniqueSize :: Int -> [Set a] -> Set a
+uniqueSize :: (Show a) =>  Int -> [Set a] -> Set a
 uniqueSize n list = only $ filter (\e -> n == (size e)) list
 
-setFilter :: (a -> Bool) -> Set a -> Set a
+setFilter :: (Ord a) => (a -> Bool) -> Set a -> Set a
 setFilter f s = fromList $ filter f $ elems s
 
 solve :: [String] -> String -> Char
@@ -56,15 +57,19 @@ solve signalStrings = (\sigString -> case () of
               eight = uniqueSize 7 signals
               sixes = fromList $ filter (\e -> (size e) == 6) signals
               nine = only $ filter (isSubsetOf four) $ elems sixes
-              zero = only $ filter (isSubsetOf one) $ sixes \\ (singleton four)
-              six = only $ difference sixes $ fromList [zero, nine]
-              fives = fromList $ filter (\e -> (size e) == 5) signals
-              three = only $ filter (isSubsetOf seven) fives
-              five = only $ filter (\e -> e \\ six) fives
-              two = only $ difference fives $ fromList [three, five]
+              zero = only $ filter (isSubsetOf one) $ elems $ sixes \\ (singleton nine)
+              six = only $ elems $ difference sixes $ fromList [zero, nine]
+              fives = fromList $ filter (\e -> (size e) == 5) $ signals
+              three = only $ filter (isSubsetOf seven) $ elems fives
+              five = only $ filter (flip isSubsetOf six) $ elems fives
+              two = only $ elems $ difference fives $ fromList [three, five]
+
+part2 (Entry signals digits) = read $ map solution digits :: Integer
+    where solution = solve signals
 
 main = do
         input <- readFile "sample.txt"
-        let lines = nlsplit input
-        let entries = map barsplit lines
-        putStrLn $ intercalate "\n" $ map show entries
+        lines = nlsplit input
+        entries = map barsplit lines
+        answers = map part2 entries
+        putStrLn $ show $ sum answers
