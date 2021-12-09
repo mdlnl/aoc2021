@@ -63,3 +63,5 @@ def part2(height_map):
 
 assert part2(parse(inputs.sample)) == 1134
 assert part2(parse(inputs.full)) == 1135260
+
+assert find_basin([[9]], 0, 0) == set()
