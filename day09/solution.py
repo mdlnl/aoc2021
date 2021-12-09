@@ -41,9 +41,9 @@ assert part1(parse(inputs.sample)) == 15
 assert part1(parse(inputs.full)) == 425
 
 def find_basin(height_map, i0, j0):
-    queue = {(i0, j0)}
     m = len(height_map)
     n = len(height_map[0])
+    queue = {(i0, j0)}
     basin = set()
     while queue:
         (i, j) = queue.pop()
