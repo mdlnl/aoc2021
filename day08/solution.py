@@ -69,5 +69,4 @@ def addup(sigmap, digits):
 
 assert output(*parse('acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf')) == 5353
 assert part2(parse_all(inputs.sample)) == 61229
-
-print(part2(parse_all(inputs.full)))
+assert part2(parse_all(inputs.full)) == 1048410
