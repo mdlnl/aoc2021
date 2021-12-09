@@ -69,7 +69,7 @@ part2 (Entry signals digits) = read $ map solution digits :: Integer
 
 main = do
         input <- readFile "sample.txt"
-        lines = nlsplit input
-        entries = map barsplit lines
-        answers = map part2 entries
+        let lines = nlsplit input
+        let entries = map barsplit lines
+        let answers = map part2 entries
         putStrLn $ show $ sum answers
