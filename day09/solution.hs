@@ -13,8 +13,17 @@ makeGrid str = Grid rows cols accessor
           cols = length $ lines !! 0
           accessor i j = read [lines !! i !! j] :: Int
 
---part1 (Grid m n h) = foldr (*) 1 [h i j | i <- [0..m-1], j <- [0..n-1]]
+neighbors (Grid m n _) i j = filter (\(ni, nj) -> ni >= 0 && ni < m && nj >= 0 && nj < n) [(i-1, j), (i+1, j), (i, j-1), (i, j+1)]
+
+isLocalMinimum grid@(Grid _ _ h) (i, j) = all (\(ni, nj) -> h ni nj > h i j) $ neighbors grid i j
+
+allLocalMinima grid@(Grid m n h) = filter (isLocalMinimum grid) [(i, j) | i <- [0..m-1], j <- [0..n-1]]
+
+part1 grid@(Grid _ _ h) = sum $ map ((+1) . uncurry h) $ allLocalMinima grid
 
 main = do
     input <- readFile "sample.txt"
-    putStrLn $ show $ makeGrid input
+    let grid = makeGrid input
+    putStrLn $ show grid
+    putStrLn $ show $ allLocalMinima grid
+    putStrLn $ show $ part1 grid
