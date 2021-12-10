@@ -59,8 +59,8 @@ totalAutocompleteScore (Incomplete stack) = foldl acc 0 stack
 
 quicksort [] = []
 quicksort (x:xs) = left ++ (x : right)
-    where left = filter (<x) xs
-          right = filter (>=x) xs
+    where left = quicksort $ filter (<x) xs
+          right = quicksort $ filter (>=x) xs
 
 part2 lines = scores !! m
     where results = map parse lines
