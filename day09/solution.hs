@@ -1,3 +1,4 @@
+import Debug.Trace
 import Data.List (intercalate)
 import System.IO (putStrLn)
 import Split
@@ -25,18 +26,21 @@ part1 grid@(Grid _ _ h) = sum $ map ((+1) . uncurry h) $ allLocalMinima grid
 
 bfs :: Grid -> [(Int, Int)] -> [(Int, Int)] -> [(Int, Int)]
 bfs grid [] visited = visited
-bfs grid (q@(qi, qj):queue) visited
-    | q == 9    = bfs queue visited
-    | otherwise = q : bfs (filter todo $ neighbors grid qi qi) (q : visited)
+bfs grid@(Grid _ _ g) (q@(qi, qj):queue) visited
+    | g qi qj == 9 = bfs grid queue visited
+    | otherwise    = q : bfs grid newQueue (q : visited)
     where todo loc = not $ elem loc $ queue ++ visited
+          newNeighbors = filter todo $ neighbors grid qi qi
+          newQueue = queue ++ newNeighbors
 
+bfsFrom :: Grid -> (Int, Int) -> [(Int, Int)]
 bfsFrom grid start = bfs grid [start] []
 
 main = do
     input <- readFile "sample.txt"
     let grid = makeGrid input
     putStrLn $ show grid
-    putStrLn $ show $ allLocalMinima grid
-    putStrLn $ show $ part1 grid
+    putStrLn $ "sum of local minima heights + 1 = " ++ (show $ part1 grid)
     let mins = allLocalMinima grid
+    putStrLn $ show $ mins !! 0
     putStrLn $ show $ bfsFrom grid $ mins !! 0
