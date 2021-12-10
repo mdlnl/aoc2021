@@ -53,4 +53,4 @@ def part2(lines):
     return scores[floor(len(scores)/2)]
 
 assert part2(inputs.sample) == 288957
-print(part2(inputs.full))
+assert part2(inputs.full) == 3583341858
