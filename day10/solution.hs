@@ -19,12 +19,10 @@ right _ = Nothing
 isRight = isJust . right
 
 data Result =
--- Error pos c    stack: there was an error (character c) at the given position
-   Error Int Char String |
--- Incomplete stack: got to the end with no errors
-   Incomplete String |
--- Complete: got to the end and the stack was empty
-   Complete deriving (Show)
+   Error Int Char String | -- there was an error (character c) at the given position
+   Incomplete String     | -- got to the end with no errors
+   Complete                -- got to the end and the stack was empty
+   deriving (Show)
 
 isError (Error _ _ _) = True
 isError _ = False
