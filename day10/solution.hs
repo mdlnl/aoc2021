@@ -17,30 +17,34 @@ right '>' = Just '<'
 right _ = Nothing
 isRight = isJust . right
 
-errorScore ')' = 3
-errorScore ']' = 57
-errorScore '}' = 1197
-errorScore '>' = 25137
-
--- Error pos stack: there was an error at the given position
+-- Error pos c stack: there was an error (character c) at the given position
 -- Incomplete stack: got to the end with no errors
 -- Complete: got to the end and the stack was empty
-data Result = Error Int String | Incomplete String | Complete deriving (Show)
+data Result = Error Int Char String | Incomplete String | Complete deriving (Show)
+
+isError (Error _ _ _) = True
+isError _ = False
 
 parse line = parseAux line 0 []
 parseAux [] pos [] = Complete
 parseAux [] pos stack@(_:_) = Incomplete stack
 parseAux (c:cs) pos []
     | isLeft c  = parseAux cs (pos + 1) [c]
-    | otherwise = Error pos []
+    | otherwise = Error pos c []
 parseAux (c:cs) pos stack@(top:pop)
     | isLeft c            = parseAux cs (pos + 1) (c : top : pop)
     | right c == Just top = parseAux cs (pos + 1) pop
-    | otherwise           = trace [c] $ Error pos stack
+    | otherwise           = Error pos c stack
+
+errorScore (Error _ ')' _) = 3
+errorScore (Error _ ']' _) = 57
+errorScore (Error _ '}' _) = 1197
+errorScore (Error _ '>' _) = 25137
+errorScore _ = 0
+
+part1 lines = sum [errorScore $ parse line | line <- lines]
 
 main = do
     input <- readFile "sample.txt"
     let lines = nlsplit input
-    let line0 = lines !! 0
-    putStrLn line0
-    putStrLn $ show $ parse line0
+    putStrLn $ "part1 " ++ (show $ part1 lines)
