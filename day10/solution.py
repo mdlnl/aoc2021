@@ -1,4 +1,5 @@
 import inputs
+from math import floor
 
 lefts = { '(':')', '[':']', '{':'}', '<':'>' }
 rights = { ')':'(', ']':'[', '}':'{', '>':'<' }
@@ -36,10 +37,20 @@ def autocomplete(line):
             r = lefts[stack.pop()]
             score = score * 5 + autocompleteScores[r]
             a.append(r)
-        return a, score
+        return score
+    return None
 
 assert part1(inputs.sample) == 26397
 assert part1(inputs.full) == 367227
 
-_, a = autocomplete('[({(<(())[]>[[{[]{<()<>>')
+a = autocomplete('[({(<(())[]>[[{[]{<()<>>')
 assert a == 288957
+
+def part2(lines):
+    scores = [autocomplete(line) for line in lines]
+    scores = [s for s in scores if s]
+    scores.sort()
+    return scores[floor(len(scores)/2)]
+
+assert part2(inputs.sample) == 288957
+print(part2(inputs.full))
