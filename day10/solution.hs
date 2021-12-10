@@ -31,15 +31,15 @@ isIncomplete (Incomplete _) = True
 isIncomplete _ = False
 
 parse line = parseAux line 0 []
-parseAux [] pos [] = Complete
-parseAux [] pos stack@(_:_) = Incomplete stack
-parseAux (c:cs) pos []
-    | isLeft c  = parseAux cs (pos + 1) [c]
-    | otherwise = Error pos c []
-parseAux (c:cs) pos stack@(top:pop)
-    | isLeft c            = parseAux cs (pos + 1) (c : top : pop)
-    | right c == Just top = parseAux cs (pos + 1) pop
-    | otherwise           = Error pos c stack
+parseAux [] pos [] = Complete -- end of line, empty stack
+parseAux [] pos stack@(_:_) = Incomplete stack -- end of line, nonempty stack
+parseAux (c:cs) pos [] -- nothing on the stack - don't expect right bracket
+    | isLeft c  = parseAux cs (pos + 1) [c] -- push bracket
+    | otherwise = Error pos c []            -- no other acceptable case
+parseAux (c:cs) pos stack@(top:pop) -- something on the stack - can be popped
+    | isLeft c            = parseAux cs (pos + 1) (c : top : pop) -- push bracket
+    | right c == Just top = parseAux cs (pos + 1) pop             -- pop matching bracket
+    | otherwise           = Error pos c stack                     -- fail all other case
 
 errorScore (Error _ ')' _) = 3
 errorScore (Error _ ']' _) = 57
