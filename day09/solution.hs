@@ -13,7 +13,9 @@ makeGrid str = Grid rows cols accessor
           cols = length $ lines !! 0
           accessor i j = read [lines !! i !! j] :: Int
 
-neighbors (Grid m n _) i j = filter (\(ni, nj) -> ni >= 0 && ni < m && nj >= 0 && nj < n) [(i-1, j), (i+1, j), (i, j-1), (i, j+1)]
+boundsCheck m n (i, j) = i >= 0 && j >= 0 && i < m && j < n
+
+neighbors (Grid m n _) i j = filter (boundsCheck m n) [(i-1, j), (i+1, j), (i, j-1), (i, j+1)]
 
 isLocalMinimum grid@(Grid _ _ h) (i, j) = all (\(ni, nj) -> h ni nj > h i j) $ neighbors grid i j
 
