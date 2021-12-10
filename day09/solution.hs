@@ -23,9 +23,20 @@ allLocalMinima grid@(Grid m n h) = filter (isLocalMinimum grid) [(i, j) | i <- [
 
 part1 grid@(Grid _ _ h) = sum $ map ((+1) . uncurry h) $ allLocalMinima grid
 
+bfs :: Grid -> [(Int, Int)] -> [(Int, Int)] -> [(Int, Int)]
+bfs grid [] visited = visited
+bfs grid (q@(qi, qj):queue) visited
+    | q == 9    = bfs queue visited
+    | otherwise = q : bfs (filter todo $ neighbors grid qi qi) (q : visited)
+    where todo loc = not $ elem loc $ queue ++ visited
+
+bfsFrom grid start = bfs grid [start] []
+
 main = do
     input <- readFile "sample.txt"
     let grid = makeGrid input
     putStrLn $ show grid
     putStrLn $ show $ allLocalMinima grid
     putStrLn $ show $ part1 grid
+    let mins = allLocalMinima grid
+    putStrLn $ show $ bfsFrom grid $ mins !! 0
