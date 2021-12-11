@@ -60,3 +60,19 @@ def part1(lines, steps=100, debug=False):
 
 assert part1(inputs.sample, 10) == 204
 assert part1(inputs.sample, 100) == 1656
+
+print(part1(inputs.full, 100))
+
+def part2(lines):
+    grid = make_grid(lines)
+    s = 0
+    flashes = 0
+    m, n = dim(grid)
+    while True:
+        s = s + 1
+        grid, flashes = step(grid)
+        if flashes == m * n:
+            return s
+
+assert part2(inputs.sample) == 195
+assert part2(inputs.full) == 273
