@@ -9,17 +9,18 @@ def parseGraph(lines):
         graph[endpoints[1].strip()].add(endpoints[0])
     return graph
 
-def traverse(graph, path=['start'], smalls=set()):
+def traverse(graph, path=['start'], smalls=defaultdict(lambda: 0), smallLimit=1):
     ''' traverse(graph, prefix): returns all paths that start with prefix and end at 'end' '''
     #print(f'traversing from {path}')
     if path[-1] == 'end':
         return [path]
     completePaths = []
-    for outEdge in graph[path[-1]] - smalls:
-        completePaths = completePaths + traverse(
-            graph,
-            path + [outEdge],
-            smalls.union({path[-1]}) if path[-1].islower() else smalls)
+    for outEdge in graph[path[-1]] - {'start'}:
+        if smalls[outEdge] < smallLimit:
+            newSmalls = smalls.copy()
+            if outEdge.islower():
+                newSmalls[outEdge] = newSmalls[outEdge] + 1
+            completePaths = completePaths + traverse(graph, path + [outEdge], newSmalls)
     return completePaths
 
 def part1(filename):
