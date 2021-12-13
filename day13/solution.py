@@ -49,8 +49,9 @@ def part2(filename, debug=False):
             print(f'{f}({u})')
             print_paper(points)
         points = f(points, u)
-        print_paper(points)
+    print_paper(points)
     return len(points)
 
 assert part2('sample.txt') == 16
 print(part1('full.txt'))
+print(part2('full.txt'))
