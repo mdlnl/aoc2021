@@ -1,3 +1,5 @@
+import itertools
+
 def parse_fold(line):
     [_, _, eq] = line.split(' ')
     [coord, val] = eq.split('=')
@@ -20,9 +22,9 @@ def parse_input(filename):
     f = open(filename, 'r')
     lines = f.readlines()
     f.close()
-    blank = next(i for i in range(len(lines)) if lines[i] == '\n')
-    points = {parse_point(line) for line in lines[0:blank]}
-    folds = [parse_fold(line) for line in lines[blank+1:]]
+    i = iter(lines)
+    points = {parse_point(line) for line in itertools.takewhile(lambda ln: ln != '\n', i)}
+    folds = [parse_fold(line) for line in i]
     return points, folds
 
 def print_paper(points):
