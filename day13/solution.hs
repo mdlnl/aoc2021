@@ -41,16 +41,12 @@ showPaper points = intercalate "\n" [
             | member p points = '#'
             | otherwise       = '.'
 
-doFolds :: Set Point -> [Fold] -> Set Point
-doFolds points [] = points
-doFolds points (f:fs) = doFolds (f points) fs
-
 run filename = do
     input <- readFile filename
     let (points, folds) = parseInput input
-    let afterFolds = doFolds points folds
+    let allFolds = foldr (.) id $ reverse folds
     putStrLn $ filename ++ " after folds"
-    putStrLn $ showPaper afterFolds
+    putStrLn $ showPaper $ allFolds points
 
 main = do
     run "sample.txt"
