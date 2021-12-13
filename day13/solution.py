@@ -10,11 +10,11 @@ def parse_point(line):
 def fold(u, v):
     return v if v < u else u - (v - u)
 
-def fold_along_x(paper, u):
-    return {(fold(u, x), y) for (x, y) in paper}
+def fold_along_x(paper, axis):
+    return {(fold(axis, x), y) for (x, y) in paper}
 
-def fold_along_y(paper, u):
-    return {(x, fold(u, y)) for (x, y) in paper}
+def fold_along_y(paper, axis):
+    return {(x, fold(axis, y)) for (x, y) in paper}
 
 def parse_input(filename):
     f = open(filename, 'r')
@@ -25,26 +25,27 @@ def parse_input(filename):
     folds = [parse_fold(line) for line in lines[blank+1:]]
     return points, folds
 
-def print_grid(points):
+def print_paper(points):
     m = max(y for (_, y) in points)
     n = max(x for (x, _) in points)
-    grid = '     ' + ''.join(str(x%10) for x in range(n)) + '\n' + '\n'.join([
+    paper = '     ' + ''.join(str(x%10) for x in range(n+1)) + '\n' + '\n'.join([
         f'{y:4} ' + ''.join([
             '#' if (x, y) in points else '.'
-            for x in range(n)
+            for x in range(n+1)
         ])
-        for y in range(m)
+        for y in range(m+1)
     ])
-    print(grid)
+    print(paper)
 
-def part1(filename):
+def part1(filename, debug=False):
     points, folds = parse_input(filename)
-    print_grid(points)
     for (f, u) in folds:
+        if debug:
+            print(f'{f}({u})')
+            print_paper(points)
         points = f(points, u)
-        print(f'{f}({u})')
-        print_grid(points)
+        print_paper(points)
     return len(points)
 
 assert part1('sample.txt') == 16
-#print(part1('full.txt'))
+print(part1('full.txt'))
