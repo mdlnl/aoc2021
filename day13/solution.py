@@ -39,6 +39,11 @@ def print_paper(points):
 
 def part1(filename, debug=False):
     points, folds = parse_input(filename)
+    (f, u) = folds[0]
+    return len(f(points, u))
+
+def part2(filename, debug=False):
+    points, folds = parse_input(filename)
     for (f, u) in folds:
         if debug:
             print(f'{f}({u})')
@@ -47,5 +52,5 @@ def part1(filename, debug=False):
         print_paper(points)
     return len(points)
 
-assert part1('sample.txt') == 16
+assert part2('sample.txt') == 16
 print(part1('full.txt'))
