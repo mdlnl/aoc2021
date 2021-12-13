@@ -14,7 +14,7 @@ parsePoint :: String -> Point
 parsePoint line = (read x :: Int, read y :: Int)
     where [x, y] = split "," line
 
--- parseFold "fold along x=5" returns a function that applies that fold to a point
+-- parseFold "fold along x=5" returns a function that applies that fold to a set of points
 parseFold :: String -> Fold
 parseFold line
     | reverse prefix !! 0 == 'x' = Set.map (\(x, y) -> (fold x, y))
