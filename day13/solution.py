@@ -25,12 +25,26 @@ def parse_input(filename):
     folds = [parse_fold(line) for line in lines[blank+1:]]
     return points, folds
 
+def print_grid(points):
+    m = max(y for (_, y) in points)
+    n = max(x for (x, _) in points)
+    grid = '     ' + ''.join(str(x%10) for x in range(n)) + '\n' + '\n'.join([
+        f'{y:4} ' + ''.join([
+            '#' if (x, y) in points else '.'
+            for x in range(n)
+        ])
+        for y in range(m)
+    ])
+    print(grid)
+
 def part1(filename):
     points, folds = parse_input(filename)
-    print(points)
+    print_grid(points)
     for (f, u) in folds:
         points = f(points, u)
-        print(f'{f}({u})\n{points}')
+        print(f'{f}({u})')
+        print_grid(points)
     return len(points)
 
-print(part1('sample.txt'))
+assert part1('sample.txt') == 16
+#print(part1('full.txt'))
