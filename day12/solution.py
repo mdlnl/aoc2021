@@ -62,3 +62,4 @@ def part2(filename):
     return len(traverseOneSecondSmall(parseGraph(lines)))
 
 assert part2('sample.txt') == 36
+assert part2('full.txt') == 148962
