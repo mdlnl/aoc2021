@@ -67,14 +67,14 @@ phInsertInc (([a, b], c) : insertions) (ph, h)
           cbInc = Map.insertWith (+) [c, b] k acInc
 
 phInsertZipped :: Rules -> (PairHistogram, Histogram) -> (PairHistogram, Histogram)
-phInsertZipped ins (ph, h) = (
-            Map.unionWith (+) unchanged $ Map.unionWith (+) left right,
-            Map.foldr (\(n, c) -> Map.insertWith (+) c n) h todo
-    )
-    where todo      = Map.intersectionWith (,) ph ins
+phInsertZipped rules (ph, h) = (withOrig, newHist)
+    where todo      = Map.intersectionWith (,) ph rules
           unchanged = ph \\ todo
           left      = Map.fromList [ ([a,c], n) | ([a,_], (n, c)) <- Map.assocs todo ] 
           right     = Map.fromList [ ([c,b], n) | ([_,b], (n, c)) <- Map.assocs todo ]
+          leftRight = Map.unionWith (+) left right
+          withOrig  = Map.unionWith (+) unchanged leftRight
+          newHist   = Map.foldr (\(n, c) -> Map.insertWith (+) c n) h todo
           
 part2 :: String -> Int -> Int
 part2 input nsteps = mostCommon - leastCommon
