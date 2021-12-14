@@ -1,5 +1,7 @@
 import Data.Maybe
+import Data.Map (Map, findWithDefault)
 import qualified Data.Map as Map
+import Debug.Trace
 import Split
 import System.IO
 
@@ -9,7 +11,7 @@ parseInput input = (template, Map.fromList $ map parseInsertionLine insertionLin
 parseInsertionLine line = ((a,b), c)
     where [[a, b], [c]] = split " -> " line
 
-insert :: Map.Map (Char, Char) Char -> String -> String
+insert :: Map (Char, Char) Char -> String -> String
 insert insertions [] = []
 insert insertions [a] = [a]
 insert insertions (a:b:s)
@@ -20,21 +22,68 @@ insert insertions (a:b:s)
 times 0 f x = x
 times n f x = f $ times (n-1) f x
 
+hist :: Ord a => [a] -> Map a Int
 hist [] = Map.fromList []
 hist (x:xs) = Map.insert x (n+1) h
     where h = hist xs
-          n = Map.findWithDefault 0 x h
+          n = zlookup x h
 
 part1 :: String -> Int -> Int
-part1 input = mostCommon - leastCommon
+part1 input nsteps = mostCommon - leastCommon
     where (template, insertions) = parseInput input
-          after10 = times 10 (insert insertions) template
-          counts = Map.elems $ hist after10
+          afterNsteps = times nsteps (insert insertions) template :: String
+          counts = Map.elems $ hist afterNsteps :: [Int]
+          leastCommon = minimum counts
+          mostCommon = maximum counts
+
+type PairHistogram = Map (Char, Char) Int
+
+zlookup :: Ord k => k -> Map k Int -> Int
+zlookup = findWithDefault 0
+
+pairHist [] = Map.empty
+pairHist [_] = Map.empty
+pairHist (a:b:s) = Map.insert (a, b) (n + 1) ph
+    where ph = pairHist $ b:s
+          n = zlookup (a, b) ph
+
+phInsert :: [((Char, Char), Char)] -> PairHistogram -> PairHistogram
+phInsert [] ph = ph 
+phInsert (((a, b), c) : insertions) ph
+    | zlookup (a, b) ph > 0 = phInsert insertions cbIncremented
+    | otherwise            = phInsert insertions ph
+    where acCount = zlookup (a, b) ph -- the original pair
+          abCount = zlookup (a, c) ph -- a new pair
+          bcCount = zlookup (c, b) ph -- a new pair
+          abDecremented = Map.insert (a, c) (acCount - 1) ph
+          acIncremented = Map.insert (a, b) (abCount + 1) abDecremented
+          cbIncremented = Map.insert (b, c) (bcCount + 1) acIncremented
+          
+part2 :: String -> Int -> Int
+part2 input nsteps = mostCommon - leastCommon
+    where (template@(template0:_), insertions) = parseInput input
+          afterNsteps = trace (times nsteps (insert insertions) template) $
+                        (phInsert $ Map.assocs insertions) $ pairHist template
+          -- A letter may occur in many pairs. We need to combine the counts for each pair.
+          letterHist = trace (show afterNsteps) $
+            foldr (
+                -- count only second letters in pairs. This leaves out the first letter in the final
+                -- string, which is also the first letter in the template, so that's our starting
+                -- point for foldr.
+                -- The updater takes a list element (pairHist key-value pair) and an existing
+                -- single-letter histogram, and returns the new histogram.
+                \((_,b), n) h -> Map.insertWith (+) b n h
+            ) (Map.singleton template0 1) (Map.assocs afterNsteps)
+          counts = trace (show letterHist) $ Map.elems $ letterHist
           leastCommon = minimum counts
           mostCommon = maximum counts
 
 main = do
     input <- readFile "sample.txt"
-    putStrLn $ "part1(sample) " ++ (show $ part1 input)
+    putStrLn $ "part1(sample) " ++ (show $ part1 input 10)
     input <- readFile "full.txt"
-    putStrLn $ "part1(full) " ++ (show $ part1 input)
+    putStrLn $ "part1(full) " ++ (show $ part1 input 10)
+    input <- readFile "sample.txt"
+    putStrLn $ "part2(sample) " ++ (show $ part2 input 1)
+    --input <- readFile "full.txt"
+    --putStrLn $ "part2(full) " ++ (show $ part2 input 10)
