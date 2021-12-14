@@ -25,16 +25,20 @@ hist (x:xs) = Map.insert x (n+1) h
     where h = hist xs
           n = Map.findWithDefault 0 x h
 
-part1 :: String -> Int
-part1 input = mostCommon - leastCommon
+part12 :: String -> Int -> Int
+part12 input nsteps = mostCommon - leastCommon
     where (template, insertions) = parseInput input
-          after10 = times 10 (insert insertions) template
+          after10 = times nsteps (insert insertions) template
           counts = Map.elems $ hist after10
           leastCommon = minimum counts
           mostCommon = maximum counts
 
 main = do
     input <- readFile "sample.txt"
-    putStrLn $ "part1(sample) " ++ (show $ part1 input)
+    putStrLn $ "part1(sample) " ++ (show $ part12 input 10)
     input <- readFile "full.txt"
-    putStrLn $ "part1(full) " ++ (show $ part1 input)
+    putStrLn $ "part1(full) " ++ (show $ part12 input 10)
+    input <- readFile "sample.txt"
+    putStrLn $ "part2(sample) " ++ (show $ part12 input 40)
+    input <- readFile "full.txt"
+    putStrLn $ "part2(full) " ++ (show $ part12 input 40)
