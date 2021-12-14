@@ -1,5 +1,5 @@
 import Data.Maybe
-import Data.Map (Map, findWithDefault)
+import Data.Map (Map, findWithDefault, (\\))
 import qualified Data.Map as Map
 import Debug.Trace
 import Split
@@ -53,19 +53,28 @@ pairHist (a:b:s) = Map.insert [a, b] (n + 1) ph
 
 phInsert :: [(TwoChars, Char)] -> PairHistogram -> PairHistogram
 phInsert [] ph = ph 
-phInsert (([a, b], c) : insertions) ph = phInsert insertions cbInc
-    where ab = zlookup [a, b] ph -- the original pair
-          abDec = Map.insert [a, b] 0 ph
-          acInc = Map.insertWith (+) [a, c] ab abDec
-          cbInc = Map.insertWith (+) [c, b] ab acInc
+phInsert (([a, b], c) : insertions) ph
+    | zlookup [a, b] ph > 0 = phInsert insertions cbInc
+    | otherwise             = phInsert insertions ph
+    where k = zlookup [a, b] ph -- the original pair
+          abDec = Map.delete [a, b] ph
+          acInc = Map.insertWith (+) [a, c] k abDec
+          cbInc = Map.insertWith (+) [c, b] k acInc
+
+phInsertI :: Map TwoChars Char -> PairHistogram -> PairHistogram
+phInsertI ins ph = Map.unionWith (+) unchanged $ Map.unionWith (+) left right
+    where todo      = Map.intersectionWith (,) ph ins
+          unchanged = ph \\ todo
+          left      = Map.fromList [ ([a,c], n) | ([a,_], (n, c)) <- Map.assocs todo ] 
+          right     = Map.fromList [ ([c,b], n) | ([_,b], (n, c)) <- Map.assocs todo ]
           
 part2 :: String -> Int -> Int
 part2 input nsteps = mostCommon - leastCommon
     where (template@(template0:_), insertions) = parseInput input
-          afterNsteps = trace (times nsteps (insert insertions) template) $
-                        (phInsert $ Map.assocs insertions) $ pairHist template
+          afterNsteps = -- trace (times nsteps (insert insertions) template) $
+                        (phInsertI insertions) $ pairHist template
           -- A letter may occur in many pairs. We need to combine the counts for each pair.
-          letterHist = trace (show afterNsteps) $
+          letterHist = -- trace (show afterNsteps) $
             foldr (
                 -- count only second letters in pairs. This leaves out the first letter in the final
                 -- string, which is also the first letter in the template, so that's our starting
@@ -74,7 +83,8 @@ part2 input nsteps = mostCommon - leastCommon
                 -- single-letter histogram, and returns the new histogram.
                 \([_,b], n) h -> Map.insertWith (+) b n h
             ) (Map.singleton template0 1) (Map.assocs afterNsteps)
-          counts = trace (show letterHist) $ Map.elems $ letterHist
+          counts = -- trace (show letterHist) $
+                   Map.elems $ letterHist
           leastCommon = minimum counts
           mostCommon = maximum counts
 
@@ -84,6 +94,6 @@ main = do
     input <- readFile "full.txt"
     putStrLn $ "part1(full) " ++ (show $ part1 input 10)
     input <- readFile "sample.txt"
-    putStrLn $ "part2(sample) " ++ (show $ part2 input 1)
+    putStrLn $ "part2(sample) " ++ (show $ part2 input 10)
     --input <- readFile "full.txt"
     --putStrLn $ "part2(full) " ++ (show $ part2 input 10)
