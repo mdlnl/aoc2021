@@ -8,16 +8,19 @@ import System.IO
 parseInput input = (template, Map.fromList $ map parseInsertionLine insertionLines)
     where (template : _ : insertionLines) = nlsplit input
 
-parseInsertionLine line = ((a,b), c)
+type TwoChars = [Char]
+
+parseInsertionLine :: String -> (TwoChars, Char)
+parseInsertionLine line = ([a,b], c)
     where [[a, b], [c]] = split " -> " line
 
-insert :: Map (Char, Char) Char -> String -> String
+insert :: Map TwoChars Char -> String -> String
 insert insertions [] = []
 insert insertions [a] = [a]
 insert insertions (a:b:s)
-    | Map.member (a, b) insertions = a : (fromJust ins) : insert insertions (b:s)
+    | Map.member [a, b] insertions = a : (fromJust ins) : insert insertions (b:s)
     | otherwise                    = a :                  insert insertions (b:s)
-    where ins = Map.lookup (a, b) insertions
+    where ins = Map.lookup [a, b] insertions
 
 times 0 f x = x
 times n f x = f $ times (n-1) f x
@@ -36,28 +39,25 @@ part1 input nsteps = mostCommon - leastCommon
           leastCommon = minimum counts
           mostCommon = maximum counts
 
-type PairHistogram = Map (Char, Char) Int
+type PairHistogram = Map TwoChars Int
 
 zlookup :: Ord k => k -> Map k Int -> Int
 zlookup = findWithDefault 0
 
+-- make a histogram of letter-pairs
 pairHist [] = Map.empty
 pairHist [_] = Map.empty
-pairHist (a:b:s) = Map.insert (a, b) (n + 1) ph
+pairHist (a:b:s) = Map.insert [a, b] (n + 1) ph
     where ph = pairHist $ b:s
-          n = zlookup (a, b) ph
+          n = zlookup [a, b] ph
 
-phInsert :: [((Char, Char), Char)] -> PairHistogram -> PairHistogram
+phInsert :: [(TwoChars, Char)] -> PairHistogram -> PairHistogram
 phInsert [] ph = ph 
-phInsert (((a, b), c) : insertions) ph
-    | zlookup (a, b) ph > 0 = phInsert insertions cbIncremented
-    | otherwise            = phInsert insertions ph
-    where acCount = zlookup (a, b) ph -- the original pair
-          abCount = zlookup (a, c) ph -- a new pair
-          bcCount = zlookup (c, b) ph -- a new pair
-          abDecremented = Map.insert (a, c) (acCount - 1) ph
-          acIncremented = Map.insert (a, b) (abCount + 1) abDecremented
-          cbIncremented = Map.insert (b, c) (bcCount + 1) acIncremented
+phInsert (([a, b], c) : insertions) ph = phInsert insertions cbInc
+    where ab = zlookup [a, b] ph -- the original pair
+          abDec = Map.insert [a, b] 0 ph
+          acInc = Map.insertWith (+) [a, c] ab abDec
+          cbInc = Map.insertWith (+) [c, b] ab acInc
           
 part2 :: String -> Int -> Int
 part2 input nsteps = mostCommon - leastCommon
@@ -72,7 +72,7 @@ part2 input nsteps = mostCommon - leastCommon
                 -- point for foldr.
                 -- The updater takes a list element (pairHist key-value pair) and an existing
                 -- single-letter histogram, and returns the new histogram.
-                \((_,b), n) h -> Map.insertWith (+) b n h
+                \([_,b], n) h -> Map.insertWith (+) b n h
             ) (Map.singleton template0 1) (Map.assocs afterNsteps)
           counts = trace (show letterHist) $ Map.elems $ letterHist
           leastCommon = minimum counts
