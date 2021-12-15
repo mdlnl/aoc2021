@@ -53,6 +53,9 @@ pairHist (a:b:s) = Map.insert [a, b] (n + 1) ph
     where ph = pairHist $ b:s
           n = zlookup [a, b] ph
 
+-- Apply insertion rules to the pairwise-histogram representation of the string.
+-- Verison 1 -- apply each insertion to the relevant pairwise-histogram bin by removing the affected
+--              pair and then updating the two new pairs.
 phInsert :: Rules -> (PairHistogram, Histogram) -> (PairHistogram, Histogram)
 phInsert ins phh = phInsertInc (Map.assocs ins) phh
 phInsertInc :: [(TwoChars, Char)] -> (PairHistogram, Histogram) ->
@@ -66,14 +69,20 @@ phInsertInc (([a, b], c) : insertions) (ph, h)
           acInc = Map.insertWith (+) [a, c] k abDec
           cbInc = Map.insertWith (+) [c, b] k acInc
 
+-- Apply insertion rules to the pairwise-histogram representation of the string.
+-- Version 2 -- intersect the rules with the current pairwise histogram, producing a todo list.
 phInsertZipped :: Rules -> (PairHistogram, Histogram) -> (PairHistogram, Histogram)
 phInsertZipped rules (ph, h) = (withOrig, newHist)
+          -- todo list is a "zipped" histogram where each bin gets tagged with the letter to insert
     where todo      = Map.intersectionWith (,) ph rules
           unchanged = ph \\ todo
+          -- new pairs resulting from the left and right halves of every pair after insertion.
+          -- fromListWith (+) makes a pairwise histogram from a (k,v) list with duplicate keys by summing.
           left      = Map.fromListWith (+) [ ([a,c], n) | ([a,_], (n, c)) <- Map.assocs todo ] 
           right     = Map.fromListWith (+) [ ([c,b], n) | ([_,b], (n, c)) <- Map.assocs todo ]
           leftRight = Map.unionWith (+) left right
           withOrig  = Map.unionWith (+) unchanged leftRight
+          -- Generate the new histogram by adding all the inserted letter's counts to the current histogram.
           newHist   = Map.foldr (\(n, c) -> Map.insertWith (+) c n) h todo
           
 part2 :: String -> Int -> Int
