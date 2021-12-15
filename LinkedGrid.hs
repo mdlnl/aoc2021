@@ -1,12 +1,22 @@
 module LinkedGrid where
 
+import Split
+
 -- LG rowsAboveReversed rowsAtOrBelow columnIndex
-data LinkedGrid a = LG [a] [a] Int
+data LinkedGrid a = LG [a] [a] Int deriving Show
 
 --instance Show a => Show (LinkedGrid a) where
   --show (LG aboves atOrBelows columnIndex) = showDlgColMarker
 
 fromListOfLists outerList = LG [] outerList 0
+
+fromString rowDelim colDelim string = 
+    fromListOfLists [ split colDelim row | row <- split rowDelim string ]
+
+map f (LG aboves atOrBelows col) =
+        LG (pmap rowf aboves) (pmap rowf atOrBelows) col
+    where pmap = Prelude.map
+          rowf = pmap f
 
 rows (LG aboves atOrBelows _) = length aboves + length atOrBelows
 
