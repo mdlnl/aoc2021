@@ -31,8 +31,17 @@ def part1(filename):
     g = lambda i, j: grid[i][j]
     return shortest_path_dr(g, len(grid), len(grid))
 
+def part2(filename):
+    grid = parse(filename)
+    n = len(grid)
+    g = lambda i, j: ((grid[i % n][j % n] - 1 + (i // n) + (j // n)) % 9) + 1
+    return shortest_path_dr(g, n * 5, n * 5)
+
 assert part1('sample.txt')[-1][-1] == 40
 assert part1('full.txt')[-1][-1] == 824
+
+assert part2('sample.txt')[-1][-1] == 315
+print(part2('full.txt')[-1][-1])
 
 # ___f?????
 # ___f?????
