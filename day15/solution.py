@@ -1,3 +1,5 @@
+import queue
+
 def parse(filename):
     f = open(filename, 'r')
     lines = f.readlines()
@@ -35,9 +37,11 @@ def part2(filename, reps=5):
     #print('\n'.join(''.join(str(g(i, j)) for j in range(5*n)) for i in range(5*n)))
     return shortest_path_dr(g, n * reps, n * reps)
 
-def part2copy(filename):
-    grid = parse(filename)
-    n = len(grid)
+def dijkstra(grid, rows, cols):
+    queue = [(0, 0)]
+    unvisited = {(i, j) for j in range(cols) for i in range(rows)}
+    dist = [ [ 0 if i == j else rows * cols * 10 for j in range(cols) ] for i in range(rows) ]
+    
 
 assert part1('sample.txt')[-1][-1] == 40
 assert part1('full.txt')[-1][-1] == 824
