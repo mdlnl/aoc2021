@@ -70,8 +70,8 @@ phInsertZipped :: Rules -> (PairHistogram, Histogram) -> (PairHistogram, Histogr
 phInsertZipped rules (ph, h) = (withOrig, newHist)
     where todo      = Map.intersectionWith (,) ph rules
           unchanged = ph \\ todo
-          left      = Map.fromList [ ([a,c], n) | ([a,_], (n, c)) <- Map.assocs todo ] 
-          right     = Map.fromList [ ([c,b], n) | ([_,b], (n, c)) <- Map.assocs todo ]
+          left      = Map.fromListWith (+) [ ([a,c], n) | ([a,_], (n, c)) <- Map.assocs todo ] 
+          right     = Map.fromListWith (+) [ ([c,b], n) | ([_,b], (n, c)) <- Map.assocs todo ]
           leftRight = Map.unionWith (+) left right
           withOrig  = Map.unionWith (+) unchanged leftRight
           newHist   = Map.foldr (\(n, c) -> Map.insertWith (+) c n) h todo
@@ -84,10 +84,11 @@ part2 input nsteps = mostCommon - leastCommon
           leastCommon = trace ("\nfinal ph " ++ show ph) $ minimum h
           mostCommon = trace ("\nfinal h " ++ show h) $ maximum h
 
-checkPairwiseAgainstBrute ins n template = pairwise == brute
-    where pairwise = times n (phInsertZipped ins) (pairHist template, hist template)
+checkPairwiseAgainstBrute ins n template = Map.differenceWith diff pairwisePairHist brutePairHist
+    where (pairwisePairHist, pairwiseHist) = times n (phInsertZipped ins) (pairHist template, hist template)
           templateN = times n (insert ins) template
-          brute = (pairHist templateN, hist templateN)
+          (brutePairHist, bruteHist) = (pairHist templateN, hist templateN)
+          diff pw b = if pw == b then Nothing else Just b
 
 main = do
     input <- readFile "sample.txt"
@@ -96,5 +97,5 @@ main = do
     putStrLn $ "part1(full) " ++ (show $ part1 input 10)
     input <- readFile "sample.txt"
     putStrLn $ "part2(sample) " ++ (show $ part2 input 10)
-    --input <- readFile "full.txt"
-    --putStrLn $ "part2(full) " ++ (show $ part2 input 10)
+    input <- readFile "full.txt"
+    putStrLn $ "part2(full) " ++ (show $ part2 input 10)
