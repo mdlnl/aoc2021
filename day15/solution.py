@@ -23,25 +23,29 @@ def shortest_path_dr(risk, rows, cols):
         best.append(frontier)
     return best
 
-def show_grid(grid):
-    return '\n'.join(' '.join(f'{c if c else " ":2}') for row in grid for c in row)
-
 def part1(filename):
     grid = parse(filename)
     g = lambda i, j: grid[i][j]
     return shortest_path_dr(g, len(grid), len(grid))
 
-def part2(filename):
+def part2(filename, reps=5):
     grid = parse(filename)
     n = len(grid)
     g = lambda i, j: ((grid[i % n][j % n] - 1 + (i // n) + (j // n)) % 9) + 1
-    return shortest_path_dr(g, n * 5, n * 5)
+    #print('\n'.join(''.join(str(g(i, j)) for j in range(5*n)) for i in range(5*n)))
+    return shortest_path_dr(g, n * reps, n * reps)
+
+def part2copy(filename):
+    grid = parse(filename)
+    n = len(grid)
 
 assert part1('sample.txt')[-1][-1] == 40
 assert part1('full.txt')[-1][-1] == 824
 
 assert part2('sample.txt')[-1][-1] == 315
-print(part2('full.txt')[-1][-1])
+#print(part2('full.txt')[-1][-1])
+print(part1('virtual.txt')[-1][-1])
+
 
 # ___f?????
 # ___f?????
