@@ -79,15 +79,18 @@ phInsertZipped rules (ph, h) = (withOrig, newHist)
 part2 :: String -> Int -> Int
 part2 input nsteps = mostCommon - leastCommon
     where (template@(template0:_), insertions) = parseInput input
-          (ph, h) = trace ("\nfinal string " ++ times nsteps (insert insertions) template) $
-                    (phInsertZipped insertions) (pairHist template, hist template)
-          leastCommon = trace ("\nfinal ph " ++ show ph) $ minimum h
-          mostCommon = trace ("\nfinal h " ++ show h) $ maximum h
+          (ph, h) = --trace ("\nfinal string " ++ times nsteps (insert insertions) template) $
+                    times nsteps (phInsertZipped insertions) (pairHist template, hist template)
+          leastCommon = --trace ("\nfinal ph " ++ show ph) $
+                        minimum h
+          mostCommon = --trace ("\nfinal h " ++ show h) $
+                        maximum h
 
-checkPairwiseAgainstBrute ins n template = Map.differenceWith diff pairwisePairHist brutePairHist
+checkPairwiseAgainstBrute ins n template = Map.differenceWith diff pairwiseHist bruteHist
     where (pairwisePairHist, pairwiseHist) = times n (phInsertZipped ins) (pairHist template, hist template)
           templateN = times n (insert ins) template
-          (brutePairHist, bruteHist) = (pairHist templateN, hist templateN)
+          brutePairHist = pairHist templateN
+          bruteHist = hist templateN
           diff pw b = if pw == b then Nothing else Just b
 
 main = do
@@ -96,6 +99,6 @@ main = do
     input <- readFile "full.txt"
     putStrLn $ "part1(full) " ++ (show $ part1 input 10)
     input <- readFile "sample.txt"
-    putStrLn $ "part2(sample) " ++ (show $ part2 input 10)
+    putStrLn $ "part2(sample) " ++ (show $ part2 input 40)
     input <- readFile "full.txt"
-    putStrLn $ "part2(full) " ++ (show $ part2 input 10)
+    putStrLn $ "part2(full) " ++ (show $ part2 input 40)
