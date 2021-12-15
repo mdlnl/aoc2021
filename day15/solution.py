@@ -43,7 +43,7 @@ assert part1('sample.txt')[-1][-1] == 40
 assert part1('full.txt')[-1][-1] == 824
 
 assert part2('sample.txt')[-1][-1] == 315
-#print(part2('full.txt')[-1][-1])
+print(part2('full.txt')[-1][-1])
 print(part1('virtual.txt')[-1][-1])
 
 
