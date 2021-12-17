@@ -2,6 +2,9 @@ import qualified Data.Map as Map (fromList, lookup)
 import Data.Maybe (Maybe(Just))
 import Numeric
 
+-----------------------------------------
+-- Definition of Packet and its pieces --
+
 type Version = Int
 type TypeId = Int
 
@@ -9,6 +12,13 @@ data Packet = Literal Header Int Int
             | Operator Header [Packet] deriving (Show)
 
 data Header = Hdr Int Int deriving Show
+
+packetLength :: Packet -> Int
+packetLength (Literal _ nGroups _) = 3 + 3 + nGroups * 5
+packetLength (Operator _ ps) = sum $ map packetLength ps
+
+-----------------------
+-- Dealing with bits --
 
 data Bit = Zero | One deriving Show
 
@@ -28,9 +38,33 @@ bitsToString [] = []
 bitsToString (Zero:bs) = '0' : (bitsToString bs)
 bitsToString (One :bs) = '1' : (bitsToString bs)
 
-packetLength :: Packet -> Int
-packetLength (Literal _ nGroups _) = 3 + 3 + nGroups * 5
-packetLength (Operator _ ps) = sum $ map packetLength ps
+hexMap = Map.fromList [
+        ('0', "0000"),
+        ('1', "0001"),
+        ('2', "0010"),
+        ('3', "0011"),
+        ('4', "0100"),
+        ('5', "0101"),
+        ('6', "0110"),
+        ('7', "0111"),
+        ('8', "1000"),
+        ('9', "1011"),
+        ('A', "1000"),
+        ('B', "1011"),
+        ('C', "1110"),
+        ('D', "1101"),
+        ('E', "1110"),
+        ('F', "1111")
+    ]
+
+hexToBits :: String -> BitString
+hexToBits [] = []
+hexToBits (h:hs) = (bitsFromString firstBits) ++ moreBits
+    where (Just firstBits) = Map.lookup h hexMap
+          moreBits = hexToBits hs
+
+-------------
+-- Parsers --
 
 data ParseResult a = PR a BitString | EndOfInput deriving Show
 type Parser a = BitString -> ParseResult a
@@ -96,30 +130,8 @@ parseGroups (One:bs) = PR (first:more) mRemainder
 parseGroup :: Parser BitString
 parseGroup bs = PR (take 4 bs) (drop 4 bs)
 
-hexMap = Map.fromList [
-        ('0', "0000"),
-        ('1', "0001"),
-        ('2', "0010"),
-        ('3', "0011"),
-        ('4', "0100"),
-        ('5', "0101"),
-        ('6', "0110"),
-        ('7', "0111"),
-        ('8', "1000"),
-        ('9', "1011"),
-        ('A', "1000"),
-        ('B', "1011"),
-        ('C', "1110"),
-        ('D', "1101"),
-        ('E', "1110"),
-        ('F', "1111")
-    ]
-
-hexToBits :: String -> BitString
-hexToBits [] = []
-hexToBits (h:hs) = (bitsFromString firstBits) ++ moreBits
-    where (Just firstBits) = Map.lookup h hexMap
-          moreBits = hexToBits hs
+---------------------
+-- Top-level stuff --
 
 doExample :: String -> Packet -> IO ()
 doExample h expected = do
