@@ -1,4 +1,6 @@
-import Data.Maybe
+import qualified Data.Map as Map (fromList, lookup)
+import Data.Maybe (Maybe(Just))
+import Numeric
 
 type Version = Int
 type TypeId = Int
@@ -6,7 +8,7 @@ type TypeId = Int
 data Packet = Literal Header Int Int
             | Operator Header [Packet] deriving (Show)
 
-data Header = VT Int Int deriving Show
+data Header = Hdr Int Int deriving Show
 
 data Bit = Zero | One deriving (Show)
 type BitString = [Bit]
@@ -16,6 +18,10 @@ bit One = 1
 
 bits :: BitString -> Int
 bits = foldl (\v b -> 2 * v + (bit b)) 0
+
+bitsFromString [] = []
+bitsFromString ('0':bs) = Zero : (bitsFromString bs)
+bitsFromString ('1':bs) = One : (bitsFromString bs)
 
 packetLength :: Packet -> Int
 packetLength (Literal _ nGroups _) = 3 + 3 + nGroups * 5
@@ -30,11 +36,11 @@ parsePacket bs
     | typeId == 4 = parseLiteral header bs
     | otherwise   = parseOperator header bs
     where (PR header hRemainder) = parseHeader bs
-          (VT _ typeId) = header
+          (Hdr _ typeId) = header
 
 parseHeader :: Parser Header  
 parseHeader [] = EndOfInput
-parseHeader bs = PR (VT v t) tr
+parseHeader bs = PR (Hdr v t) tr
     where (PR v vr) = parseVersion bs
           (PR t tr) = parseTypeId vr
 
@@ -84,3 +90,55 @@ parseGroups (One:bs) = PR (first:more) mRemainder
 
 parseGroup :: Parser BitString
 parseGroup bs = PR (take 4 bs) (drop 4 bs)
+
+doExample :: String -> Packet -> IO ()
+doExample h expected = do
+    putStrLn $ "Expected: " ++ show expected
+    putStrLn $ "Actual  : " ++ show actual
+    putStrLn $ "Remainder: " ++ show remainder
+    where bs = hexToBits h
+          (PR actual remainder) = parsePacket bs
+
+hexMap = Map.fromList [
+        ('0', "0000"),
+        ('1', "0001"),
+        ('2', "0010"),
+        ('3', "0011"),
+        ('4', "0100"),
+        ('5', "0101"),
+        ('6', "0110"),
+        ('7', "0111"),
+        ('8', "1000"),
+        ('9', "1011"),
+        ('A', "1000"),
+        ('B', "1011"),
+        ('C', "1110"),
+        ('D', "1101"),
+        ('E', "1110"),
+        ('F', "1111")
+    ]
+
+hexToBits :: String -> BitString
+hexToBits [] = []
+hexToBits (h:hs) = (bitsFromString firstBits) ++ moreBits
+    where (Just firstBits) = Map.lookup h hexMap
+          moreBits = hexToBits hs
+
+example1 = doExample "D2FE28" (Literal (Hdr 6 4) 3 2021)
+example2 = doExample "38006F45291200" (Operator (Hdr 1 6) [
+        (Literal (Hdr 0 4) 1 10),
+        (Literal (Hdr 0 4) 2 20)
+    ])
+--example3 = doExample "EE00D40C823060" (Operator (Hdr 7 3) [
+        --(Literal (Hdr 0 4) 1 1),
+        --(Literal (Hdr 0 4) 1 2),
+        --(Literal (Hdr 0 4) 1 )
+    --])
+--example4 = doExample "8A004A801A8002F478" (Operator (Hdr 4 -1) [
+        --(Operator (Hdr 1 -1) [
+            --(Operator (Hdr 5 -1) [
+                --(Operator (Hdr 6 -1) [
+                --])
+            --])
+        --])
+    ---])
