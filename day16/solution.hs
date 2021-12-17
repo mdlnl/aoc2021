@@ -56,10 +56,10 @@ hexMap = Map.fromList [
         ('6', "0110"),
         ('7', "0111"),
         ('8', "1000"),
-        ('9', "1011"),
-        ('A', "1000"),
+        ('9', "1001"),
+        ('A', "1010"),
         ('B', "1011"),
-        ('C', "1110"),
+        ('C', "1100"),
         ('D', "1101"),
         ('E', "1110"),
         ('F', "1111")
@@ -151,7 +151,9 @@ doExample h expected = do
 
 example1 = doExample "D2FE28" (Literal (Hdr 6 4) 3 2021)
 
-example2 = doExample "38006F45291200" (Operator (Hdr 1 6) [
+example2hex = "38006F45291200"
+example2bits = hexToBits example2hex
+example2 = doExample example2hex (Operator (Hdr 1 6) [
         (Literal (Hdr 0 4) 1 10),
         (Literal (Hdr 0 4) 2 20)
     ])
