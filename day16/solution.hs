@@ -68,6 +68,7 @@ hexMap = Map.fromList [
 
 hexToBits :: String -> BitString
 hexToBits [] = []
+hexToBits "\n" = []
 hexToBits (h:hs) = (bitsFromString firstBits) ++ moreBits
     where (Just firstBits) = Map.lookup h hexMap
           moreBits = hexToBits hs
@@ -156,8 +157,8 @@ parseGroup bs = PR (take 4 bs) (drop 4 bs)
 
 doExample :: String -> Packet -> IO ()
 doExample h expected = do
-    putStrLn $ "Expected: " ++ show expected
-    putStrLn $ "Actual  : " ++ show actual
+    putStrLn $ "Expected: " ++ show expected ++ " SUM=" ++ (show $ versionSum expected)
+    putStrLn $ "Actual  : " ++ show actual ++ " SUM=" ++ (show $ versionSum actual)
     putStrLn $ "Remainder: " ++ bitsToString remainder
     where bs = hexToBits h
           (PR actual remainder) = parsePacket bs
@@ -173,7 +174,7 @@ example2 = doExample example2hex (Operator (Hdr 1 6) [
 
 example3hex = "EE00D40C823060"
 example3bits = hexToBits example3hex
-example3 = doExample example4hex (Operator (Hdr 7 3) [
+example3 = doExample example3hex (Operator (Hdr 7 3) [
         (Literal (Hdr 0 4) 1 1),
         (Literal (Hdr 0 4) 1 2),
         (Literal (Hdr 0 4) 1 3)
@@ -189,4 +190,17 @@ example4 = doExample example4hex (Operator (Hdr 4 0) [
         ])
     ])
 
-main = example2
+------------------------------
+-- Actual requested answers --
+
+versionSum (Literal (Hdr v _) _ _) = v
+versionSum (Operator (Hdr v _) subpackets) = v + (sum $ map versionSum subpackets)
+
+part1 filename = do
+    line <- readFile filename
+    let bs = hexToBits line
+    let PR packet _ = parsePacket bs
+    putStrLn $ filename ++ (show $ versionSum packet)
+
+main = do
+    part1 "full.txt"
