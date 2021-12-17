@@ -1,3 +1,4 @@
+import Data.List (intercalate)
 import qualified Data.Map as Map (fromList, lookup)
 import Data.Maybe (Maybe(Just))
 import Numeric
@@ -8,10 +9,17 @@ import Numeric
 type Version = Int
 type TypeId = Int
 
-data Packet = Literal Header Int Int
-            | Operator Header [Packet] deriving (Show)
+data Header = Hdr Version TypeId
 
-data Header = Hdr Int Int deriving Show
+instance Show Header where
+    show (Hdr v t) = (show v) ++ (show t)
+
+data Packet = Literal Header Int Int
+            | Operator Header [Packet]
+
+instance Show Packet where
+    show (Literal (Hdr version _) _ value)       = (show version) ++ "=" ++ (show value)
+    show (Operator (Hdr version _) subpackets) = (show version) ++ "{" ++ (intercalate ", " $ map show subpackets) ++ "}"
 
 packetLength :: Packet -> Int
 packetLength (Literal _ nGroups _) = 3 + 3 + nGroups * 5
@@ -130,8 +138,8 @@ parseGroups (One:bs) = PR (first:more) mRemainder
 parseGroup :: Parser BitString
 parseGroup bs = PR (take 4 bs) (drop 4 bs)
 
----------------------
--- Top-level stuff --
+--------------
+-- Examples --
 
 doExample :: String -> Packet -> IO ()
 doExample h expected = do
@@ -142,20 +150,23 @@ doExample h expected = do
           (PR actual remainder) = parsePacket bs
 
 example1 = doExample "D2FE28" (Literal (Hdr 6 4) 3 2021)
+
 example2 = doExample "38006F45291200" (Operator (Hdr 1 6) [
         (Literal (Hdr 0 4) 1 10),
         (Literal (Hdr 0 4) 2 20)
     ])
---example3 = doExample "EE00D40C823060" (Operator (Hdr 7 3) [
-        --(Literal (Hdr 0 4) 1 1),
-        --(Literal (Hdr 0 4) 1 2),
-        --(Literal (Hdr 0 4) 1 )
-    --])
---example4 = doExample "8A004A801A8002F478" (Operator (Hdr 4 -1) [
-        --(Operator (Hdr 1 -1) [
-            --(Operator (Hdr 5 -1) [
-                --(Operator (Hdr 6 -1) [
-                --])
-            --])
-        --])
-    ---])
+
+example3 = doExample "EE00D40C823060" (Operator (Hdr 7 3) [
+        (Literal (Hdr 0 4) 1 1),
+        (Literal (Hdr 0 4) 1 2),
+        (Literal (Hdr 0 4) 1 3)
+    ])
+
+example4 = doExample "8A004A801A8002F478" (Operator (Hdr 4 0) [
+        (Operator (Hdr 1 0) [
+            (Operator (Hdr 5 0) [
+                (Operator (Hdr 6 0) [
+                ])
+            ])
+        ])
+    ])
