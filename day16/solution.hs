@@ -10,7 +10,8 @@ data Packet = Literal Header Int Int
 
 data Header = Hdr Int Int deriving Show
 
-data Bit = Zero | One deriving (Show)
+data Bit = Zero | One deriving Show
+
 type BitString = [Bit]
 
 bit Zero = 0
@@ -23,11 +24,15 @@ bitsFromString [] = []
 bitsFromString ('0':bs) = Zero : (bitsFromString bs)
 bitsFromString ('1':bs) = One : (bitsFromString bs)
 
+bitsToString [] = []
+bitsToString (Zero:bs) = '0' : (bitsToString bs)
+bitsToString (One :bs) = '1' : (bitsToString bs)
+
 packetLength :: Packet -> Int
 packetLength (Literal _ nGroups _) = 3 + 3 + nGroups * 5
 packetLength (Operator _ ps) = sum $ map packetLength ps
 
-data ParseResult a = PR a BitString | EndOfInput deriving (Show)
+data ParseResult a = PR a BitString | EndOfInput deriving Show
 type Parser a = BitString -> ParseResult a
 
 parsePacket :: Parser Packet
@@ -91,14 +96,6 @@ parseGroups (One:bs) = PR (first:more) mRemainder
 parseGroup :: Parser BitString
 parseGroup bs = PR (take 4 bs) (drop 4 bs)
 
-doExample :: String -> Packet -> IO ()
-doExample h expected = do
-    putStrLn $ "Expected: " ++ show expected
-    putStrLn $ "Actual  : " ++ show actual
-    putStrLn $ "Remainder: " ++ show remainder
-    where bs = hexToBits h
-          (PR actual remainder) = parsePacket bs
-
 hexMap = Map.fromList [
         ('0', "0000"),
         ('1', "0001"),
@@ -123,6 +120,14 @@ hexToBits [] = []
 hexToBits (h:hs) = (bitsFromString firstBits) ++ moreBits
     where (Just firstBits) = Map.lookup h hexMap
           moreBits = hexToBits hs
+
+doExample :: String -> Packet -> IO ()
+doExample h expected = do
+    putStrLn $ "Expected: " ++ show expected
+    putStrLn $ "Actual  : " ++ show actual
+    putStrLn $ "Remainder: " ++ bitsToString remainder
+    where bs = hexToBits h
+          (PR actual remainder) = parsePacket bs
 
 example1 = doExample "D2FE28" (Literal (Hdr 6 4) 3 2021)
 example2 = doExample "38006F45291200" (Operator (Hdr 1 6) [
