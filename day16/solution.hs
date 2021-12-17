@@ -29,7 +29,8 @@ instance Show Packet where
 
 packetLength :: Packet -> Int
 packetLength (Literal _ nGroups _) = 3 + 3 + nGroups * 5
-packetLength (Operator _ _ ps) = sum $ map packetLength ps
+packetLength (Operator _ (TotalBits _) ps) = 3 + 3 + 1 + 15 + (sum $ map packetLength ps)
+packetLength (Operator _ (SubpacketCount _) ps) = 3 + 3 + 1 + 11 + (sum $ map packetLength ps)
 
 -----------------------
 -- Dealing with bits --
@@ -134,8 +135,9 @@ parseSubpacketsByLength len bs
     | otherwise = PR (first:more) mspRemainder
     where PR first fRemainder = --ptrace ("parseSubpacketsByLength" ++ show len) bs $
                                 parsePacket bs
-          remainingLength = len - (packetLength first)
-          PR more mspRemainder = --trace ("First=[" ++ show first ++ "], |First|=" ++ show (packetLength first) ++ ", Remaining " ++ show remainingLength ++ " [" ++ bitsToString fRemainder ++ "]") $
+          firstLength     = packetLength first
+          remainingLength = len - firstLength
+          PR more mspRemainder = trace ("First=[" ++ show first ++ "], |First|=" ++ show firstLength ++ ", Remaining " ++ show remainingLength ++ " [" ++ bitsToString fRemainder ++ "]") $
                                  parseSubpacketsByLength remainingLength fRemainder
 
 parseInt :: Int -> Parser Int
@@ -206,17 +208,18 @@ example5hex = "620080001611562C8802118E34"
 example5bits = hexToBits example4hex
 example5 = doExample example5hex $
     Operator (Hdr 3 0) (TotalBits 0) [
-        Operator (Hdr 0 0) (TotalBits 0) [Literal (Hdr 0 0) 0 0, Literal (Hdr 5 0) 0 0],
-        Operator (Hdr 1 0) (TotalBits 0) [Literal (Hdr 0 0) 0 0, Literal (Hdr 3 0) 0 0]
+        Operator (Hdr 0 0) (TotalBits 0) [Literal (Hdr 0 4) 0 0, Literal (Hdr 5 4) 0 0],
+        Operator (Hdr 1 0) (TotalBits 0) [Literal (Hdr 0 4) 0 0, Literal (Hdr 3 4) 0 0]
     ]
 
 example6hex = "C0015000016115A2E0802F182340"
 example6bits = hexToBits example6hex
-example6 = doExample example6hex $
-    Operator (Hdr 3 0) (SubpacketCount 0) [
-        Operator (Hdr 0 0) (TotalBits 0) [Literal (Hdr 0 0) 0 0, Literal (Hdr 5 0) 0 0],
-        Operator (Hdr 1 0) (TotalBits 0) [Literal (Hdr 0 0) 0 0, Literal (Hdr 3 0) 0 0]
+example6expected = 
+    Operator (Hdr 3 0) (TotalBits 84) [
+        Operator (Hdr 0 0) (TotalBits 22)     [Literal (Hdr 0 4) 1 10, Literal (Hdr 6 4) 1 11],
+        Operator (Hdr 1 0) (SubpacketCount 2) [Literal (Hdr 7 4) 1 12, Literal (Hdr 0 4) 12 13]
     ]
+example6 = doExample example6hex example6expected
 
 ------------------------------
 -- Actual requested answers --
