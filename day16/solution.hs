@@ -123,9 +123,10 @@ parseSubpacketsByCount n bs = PR (first:more) mspRemainder
           PR more mspRemainder = parseSubpacketsByCount (n-1) fRemainder
 
 parseSubpacketsByLength :: Int -> Parser [Packet]
-parseSubpacketsByLength n [] = error $ "Expected " ++ show n ++ " bits"
 parseSubpacketsByLength 0 bs = PR [] bs
-parseSubpacketsByLength len bs = PR (first:more) mspRemainder
+parseSubpacketsByLength len bs
+    | length bs < len = error $ "Expected " ++ show len ++ " bits for subpackets, but only got " ++ (show $ length bs)
+    | otherwise = PR (first:more) mspRemainder
     where PR first fRemainder = --ptrace ("parseSubpacketsByLength" ++ show len) bs $
                                 parsePacket bs
           remainingLength = len - (packetLength first)
@@ -134,7 +135,7 @@ parseSubpacketsByLength len bs = PR (first:more) mspRemainder
 
 parseInt :: Int -> Parser Int
 parseInt n bs
-    | length bs < n = error $ "Expected " ++ show n ++ " bits forming an int."
+    | length bs < n = error $ "Expected " ++ show n ++ " bits forming an int, but got " ++ (show $ length bs)
     | otherwise     = PR (bits (take n bs)) (drop n bs)
 parseVersion = parseInt 3
 parseTypeId = parseInt 3
