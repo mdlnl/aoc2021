@@ -15,16 +15,21 @@ data Header = Hdr Version TypeId
 instance Show Header where
     show (Hdr v t) = (show v) ++ (show t)
 
+data SubpacketLength = TotalBits Int | SubpacketCount Int
+
+lengthTypeMark (TotalBits n)      = "-" ++ show n
+lengthTypeMark (SubpacketCount n) = "#" ++ show n
+
 data Packet = Literal Header Int Int
-            | Operator Header [Packet]
+            | Operator Header SubpacketLength [Packet]
 
 instance Show Packet where
     show (Literal (Hdr version _) numGroups value)       = (show version) ++ "=" ++ (show value) ++ "(" ++ show numGroups ++ ")"
-    show (Operator (Hdr version _) subpackets) = (show version) ++ "{" ++ (intercalate ", " $ map show subpackets) ++ "}"
+    show (Operator (Hdr version _) lengthType subpackets) = (show version) ++ (lengthTypeMark lengthType) ++ "{" ++ (intercalate ", " $ map show subpackets) ++ "}"
 
 packetLength :: Packet -> Int
 packetLength (Literal _ nGroups _) = 3 + 3 + nGroups * 5
-packetLength (Operator _ ps) = sum $ map packetLength ps
+packetLength (Operator _ _ ps) = sum $ map packetLength ps
 
 -----------------------
 -- Dealing with bits --
@@ -109,11 +114,11 @@ parseOperator h (Zero:bs) = PR packet spRemainder
     where PR spLength lRemainder = parseInt 15 bs
           PR subpackets spRemainder = --trace ("LENGTH=" ++ bitsToString (take 15 bs)) $
                                       parseSubpacketsByLength spLength lRemainder
-          packet = Operator h subpackets
+          packet = Operator h (TotalBits spLength) subpackets
 parseOperator h (One:bs) = PR packet spRemainder
     where PR spCount lRemainder = parseInt 11 bs
           PR subpackets spRemainder = parseSubpacketsByCount spCount lRemainder
-          packet = Operator h subpackets
+          packet = Operator h (SubpacketCount spCount) subpackets
 
 parseSubpacketsByCount :: Int -> Parser [Packet]
 parseSubpacketsByCount n [] = error $ "Expected " ++ show n ++ " subpackets"
@@ -160,6 +165,7 @@ parseGroup bs
 
 doExample :: String -> Packet -> IO ()
 doExample h expected = do
+    putStrLn $ "Encoding: " ++ h
     putStrLn $ "Expected: " ++ show expected ++ " SUM=" ++ (show $ versionSum expected)
     putStrLn $ "Actual  : " ++ show actual ++ " SUM=" ++ (show $ versionSum actual)
     putStrLn $ "Remainder: " ++ bitsToString remainder
@@ -171,7 +177,7 @@ example1 = doExample "D2FE28" (Literal (Hdr 6 4) 3 2021)
 example2hex = "38006F45291200"
 example2bits = hexToBits example2hex
 example2 = doExample example2hex $
-    Operator (Hdr 1 6) [
+    Operator (Hdr 1 6) (TotalBits 27) [
         Literal (Hdr 0 4) 1 10,
         Literal (Hdr 0 4) 2 20
     ]
@@ -179,7 +185,7 @@ example2 = doExample example2hex $
 example3hex = "EE00D40C823060"
 example3bits = hexToBits example3hex
 example3 = doExample example3hex $
-    Operator (Hdr 7 3) [
+    Operator (Hdr 7 3) (SubpacketCount 3) [
         Literal (Hdr 0 4) 1 1,
         Literal (Hdr 0 4) 1 2,
         Literal (Hdr 0 4) 1 3
@@ -188,9 +194,9 @@ example3 = doExample example3hex $
 example4hex = "8A004A801A8002F478"
 example4bits = hexToBits example4hex
 example4 = doExample example4hex $
-    Operator (Hdr 4 0) [
-        Operator (Hdr 1 0) [
-            Operator (Hdr 5 0) [
+    Operator (Hdr 4 0) (TotalBits 0) [
+        Operator (Hdr 1 0) (TotalBits 0) [
+            Operator (Hdr 5 0) (TotalBits 0) [
                 (Literal (Hdr 6 0) 0 0)
             ]
         ]
@@ -199,24 +205,24 @@ example4 = doExample example4hex $
 example5hex = "620080001611562C8802118E34"
 example5bits = hexToBits example4hex
 example5 = doExample example5hex $
-    Operator (Hdr 3 0) [
-        Operator (Hdr 0 0) [Literal (Hdr 0 0) 0 0, Literal (Hdr 5 0) 0 0],
-        Operator (Hdr 1 0) [Literal (Hdr 0 0) 0 0, Literal (Hdr 3 0) 0 0]
+    Operator (Hdr 3 0) (TotalBits 0) [
+        Operator (Hdr 0 0) (TotalBits 0) [Literal (Hdr 0 0) 0 0, Literal (Hdr 5 0) 0 0],
+        Operator (Hdr 1 0) (TotalBits 0) [Literal (Hdr 0 0) 0 0, Literal (Hdr 3 0) 0 0]
     ]
 
 example6hex = "C0015000016115A2E0802F182340"
 example6bits = hexToBits example6hex
 example6 = doExample example6hex $
-    Operator (Hdr 3 0) [
-        Operator (Hdr 0 0) [Literal (Hdr 0 0) 0 0, Literal (Hdr 5 0) 0 0],
-        Operator (Hdr 1 0) [Literal (Hdr 0 0) 0 0, Literal (Hdr 3 0) 0 0]
+    Operator (Hdr 3 0) (SubpacketCount 0) [
+        Operator (Hdr 0 0) (TotalBits 0) [Literal (Hdr 0 0) 0 0, Literal (Hdr 5 0) 0 0],
+        Operator (Hdr 1 0) (TotalBits 0) [Literal (Hdr 0 0) 0 0, Literal (Hdr 3 0) 0 0]
     ]
 
 ------------------------------
 -- Actual requested answers --
 
 versionSum (Literal (Hdr v _) _ _) = v
-versionSum (Operator (Hdr v _) subpackets) = v + (sum $ map versionSum subpackets)
+versionSum (Operator (Hdr v _) _ subpackets) = v + (sum $ map versionSum subpackets)
 
 fullHex = "020D708041258C0B4C683E61F674A1401595CC3DE669AC4FB7BEFEE840182CDF033401296F44367F938371802D2CC9801A980021304609C431007239C2C860400F7C36B005E446A44662A2805925FF96CBCE0033C5736D13D9CFCDC001C89BF57505799C0D1802D2639801A900021105A3A43C1007A1EC368A72D86130057401782F25B9054B94B003013EDF34133218A00D4A6F1985624B331FE359C354F7EB64A8524027D4DEB785CA00D540010D8E9132270803F1CA1D416200FDAC01697DCEB43D9DC5F6B7239CCA7557200986C013912598FF0BE4DFCC012C0091E7EFFA6E44123CE74624FBA01001328C01C8FF06E0A9803D1FA3343E3007A1641684C600B47DE009024ED7DD9564ED7DD940C017A00AF26654F76B5C62C65295B1B4ED8C1804DD979E2B13A97029CFCB3F1F96F28CE43318560F8400E2CAA5D80270FA1C90099D3D41BE00DD00010B893132108002131662342D91AFCA6330001073EA2E0054BC098804B5C00CC667B79727FF646267FA9E3971C96E71E8C00D911A9C738EC401A6CBEA33BC09B8015697BB7CD746E4A9FD4BB5613004BC01598EEE96EF755149B9A049D80480230C0041E514A51467D226E692801F049F73287F7AC29CB453E4B1FDE1F624100203368B3670200C46E93D13CAD11A6673B63A42600C00021119E304271006A30C3B844200E45F8A306C8037C9CA6FF850B004A459672B5C4E66A80090CC4F31E1D80193E60068801EC056498012804C58011BEC0414A00EF46005880162006800A3460073007B620070801E801073002B2C0055CEE9BC801DC9F5B913587D2C90600E4D93CE1A4DB51007E7399B066802339EEC65F519CF7632FAB900A45398C4A45B401AB8803506A2E4300004262AC13866401434D984CA4490ACA81CC0FB008B93764F9A8AE4F7ABED6B293330D46B7969998021C9EEF67C97BAC122822017C1C9FA0745B930D9C480"
 fullBits = hexToBits fullHex
