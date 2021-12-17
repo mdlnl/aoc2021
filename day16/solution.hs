@@ -133,8 +133,9 @@ parseSubpacketsByLength len bs = PR (first:more) mspRemainder
                                  parseSubpacketsByLength remainingLength fRemainder
 
 parseInt :: Int -> Parser Int
-parseInt n [] = error $ "Expected " ++ show n ++ " bits forming an int."
-parseInt n bs = PR (bits (take n bs)) (drop n bs)
+parseInt n bs
+    | length bs < n = error $ "Expected " ++ show n ++ " bits forming an int."
+    | otherwise     = PR (bits (take n bs)) (drop n bs)
 parseVersion = parseInt 3
 parseTypeId = parseInt 3
 
@@ -149,8 +150,9 @@ parseGroups (One:bs) = PR (first:more) mRemainder
           PR more mRemainder = parseGroups fRemainder
 
 parseGroup :: Parser BitString
-parseGroup [] = error "Expected group"
-parseGroup bs = PR (take 4 bs) (drop 4 bs)
+parseGroup bs
+    | length bs < 4 = error "Expected 4 bits for group"
+    | otherwise     = PR (take 4 bs) (drop 4 bs)
 
 --------------
 -- Examples --
