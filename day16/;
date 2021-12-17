@@ -40,19 +40,6 @@ packetLength (Literal _ nGroups _) = 3 + 3 + nGroups * 5
 packetLength (Operator _ (TotalBits _) ps) = 3 + 3 + 1 + 15 + (sum $ map packetLength ps)
 packetLength (Operator _ (SubpacketCount _) ps) = 3 + 3 + 1 + 11 + (sum $ map packetLength ps)
 
-evaluate :: Packet -> Int
-evaluate (Literal _ _ value) = value
-evaluate (Operator (Hdr _ 0) _ subs) = sum $ map evaluate subs
-evaluate (Operator (Hdr _ 1) _ subs) = product $ map evaluate subs
-evaluate (Operator (Hdr _ 2) _ subs) = minimum $ map evaluate subs
-evaluate (Operator (Hdr _ 3) _ subs) = maximum $ map evaluate subs
-evaluate (Operator (Hdr _ 5) _ [p, q]) = if evaluate p > evaluate q then 1 else 0
-evaluate (Operator (Hdr _ 6) _ [p, q]) = if evaluate p < evaluate q then 1 else 0
-evaluate (Operator (Hdr _ 7) _ [p, q]) = if evaluate p == evaluate q then 1 else 0
-
-evaluateHex h = evaluate packet
-    where PR packet _ = parsePacket $ hexToBits h
-
 -----------------------
 -- Dealing with bits --
 
@@ -143,8 +130,8 @@ parseOperator h (One:bs) = PR packet spRemainder
           packet = Operator h (SubpacketCount spCount) subpackets
 
 parseSubpacketsByCount :: Int -> Parser [Packet]
-parseSubpacketsByCount 0 bs = PR [] bs
 parseSubpacketsByCount n [] = error $ "Expected " ++ show n ++ " subpackets"
+parseSubpacketsByCount 0 bs = PR [] bs
 parseSubpacketsByCount n bs = PR (first:more) mspRemainder
     where PR first fRemainder = parsePacket bs
           PR more mspRemainder = parseSubpacketsByCount (n-1) fRemainder
