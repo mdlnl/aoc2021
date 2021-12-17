@@ -36,8 +36,9 @@ half n
 
 position :: Velocity -> Int -> Position
 position (V vx0 vy0) n = P
-     (n * vx0 - (half $ n * (n-1) * (signum vx0)))
+     (nx * vx0 - (half $ nx * (nx-1) * (signum vx0)))
      (n * vy0 - (half $ n * (n-1)))
+     where nx = min n $ abs vx0
 
 arc :: Velocity -> [Position]
 arc v = map (position v) [0..]
@@ -51,7 +52,9 @@ apex (p0:p1:ps)
 -- Input and parsers --
 
 sampleInput = "target area: x=20..30, y=-10..-5"
-shouldEverWorkForSampleInput = [V 7 2, V 6 3]
+sample = parse sampleInput
+shouldEverWorkForSampleInput  = [V 7 2, V 6 3, V 9 0]
+shouldNeverWorkForSampleInput = [V 17 (-14)]
 
 parse :: String -> Box
 parse input = B (parseRange xr) (parseRange yr)
@@ -68,6 +71,8 @@ data Assignment = A Velocity Int
 
 works (A v0 n) t = inBox t $ position v0 n
 
-ever t@(B _ yr@(R bottom _)) v0 = not . null $ takeWhile (atOrAbove bottom) $ arc v0
+search t@(B _ yr@(R bottom _)) v0 = filter (inBox t) $ takeWhile (atOrAbove bottom) $ arc v0
+
+ever t@(B _ yr@(R bottom _)) v0 = not . null $ filter (inBox t) $ takeWhile (atOrAbove bottom) $ arc v0
 
 
