@@ -3,7 +3,6 @@ Single-step drag function:
 ```
 vx -> vx - sign(vx0)
 vy -> vy - 1
-
 ```
 
 where `sign` can be -1, 0, or +1.
