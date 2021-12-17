@@ -67,12 +67,6 @@ parseRange (_:'=':r) = R (read low) (read high)
 ------------
 -- Search --
 
-data Assignment = A Velocity Int
-
-works (A v0 n) t = inBox t $ position v0 n
-
 search t@(B _ yr@(R bottom _)) v0 = filter (inBox t) $ takeWhile (atOrAbove bottom) $ arc v0
 
-ever t@(B _ yr@(R bottom _)) v0 = not . null $ filter (inBox t) $ takeWhile (atOrAbove bottom) $ arc v0
-
-
+ever t v0 = not $ null $ search t v0
