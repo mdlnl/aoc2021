@@ -15,16 +15,24 @@ data Header = Hdr Version TypeId
 instance Show Header where
     show (Hdr v t) = (show v) ++ (show t)
 
+type GroupCount = Int
 data SubpacketLength = TotalBits Int | SubpacketCount Int
 
 lengthTypeMark (TotalBits n)      = "-" ++ show n
 lengthTypeMark (SubpacketCount n) = "#" ++ show n
 
-data Packet = Literal Header Int Int
+data Packet = Literal Header GroupCount Int
             | Operator Header SubpacketLength [Packet]
 
+indent n = take (4*n) $ repeat ' '
+
+pretty :: Int -> Packet -> String
+pretty level (Literal (Hdr version _) numGroups value) = indent level ++ show version ++ "=" ++ show value ++ "(" ++ show numGroups ++ ")"
+pretty level (Operator (Hdr version _) lengthType subpackets) = indent level ++ show version ++ lengthTypeMark lengthType ++ "{\n"
+                                                             ++ (intercalate "\n" $ map (pretty $ level+1) subpackets) ++ "\n" ++ indent level ++ "}" 
+
 instance Show Packet where
-    show (Literal (Hdr version _) numGroups value)       = (show version) ++ "=" ++ (show value) ++ "(" ++ show numGroups ++ ")"
+    show (Literal (Hdr version _) numGroups value)        = (show version) ++ "=" ++ (show value) ++ "(" ++ show numGroups ++ ")"
     show (Operator (Hdr version _) lengthType subpackets) = (show version) ++ (lengthTypeMark lengthType) ++ "{" ++ (intercalate ", " $ map show subpackets) ++ "}"
 
 packetLength :: Packet -> Int
