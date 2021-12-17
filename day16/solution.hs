@@ -16,24 +16,44 @@ instance Show Header where
     show (Hdr v t) = (show v) ++ (show t)
 
 type GroupCount = Int
-data SubpacketLength = TotalBits Int | SubpacketCount Int
+data SubpacketLength = TotalBits Int | SubpacketCount Int deriving Show
 
 lengthTypeMark (TotalBits n)      = "-" ++ show n
 lengthTypeMark (SubpacketCount n) = "#" ++ show n
 
 data Packet = Literal Header GroupCount Int
             | Operator Header SubpacketLength [Packet]
+            deriving Show
 
 indent n = take (4*n) $ repeat ' '
 
 pretty :: Int -> Packet -> String
-pretty level (Literal (Hdr version _) numGroups value) = indent level ++ show version ++ "=" ++ show value ++ "(" ++ show numGroups ++ ")"
-pretty level (Operator (Hdr version _) lengthType subpackets) = indent level ++ show version ++ lengthTypeMark lengthType ++ "{\n"
-                                                             ++ (intercalate "\n" $ map (pretty $ level+1) subpackets) ++ "\n" ++ indent level ++ "}" 
+pretty level (Literal (Hdr version _) numGroups value) = indent level
+                                                      ++ show version ++ "=" ++ show value
+                                                      ++ "(" ++ show numGroups ++ ")"
+pretty level (Operator (Hdr version _) lengthType subpackets) = indent level
+                                                             ++ show version
+                                                             ++ lengthTypeMark lengthType
+                                                             ++ "{\n"
+                                                             ++ (intercalate "\n" $
+                                                                 map (pretty $ level+1) subpackets)
+                                                             ++ "\n" ++ indent level ++ "}" 
 
-instance Show Packet where
-    show (Literal (Hdr version _) numGroups value)        = (show version) ++ "=" ++ (show value) ++ "(" ++ show numGroups ++ ")"
-    show (Operator (Hdr version _) lengthType subpackets) = (show version) ++ (lengthTypeMark lengthType) ++ "{" ++ (intercalate ", " $ map show subpackets) ++ "}"
+parens s = "(" ++ ")"
+
+prettyEquation :: Packet -> String
+prettyEquation (Literal _ _ value) = show value
+prettyEquation (Operator (Hdr _ 0) _ subs) = intercalate " + " $ map prettyEquation subs
+prettyEquation (Operator (Hdr _ 1) _ subs) = intercalate " * " $ map prettyEquation subs
+prettyEquation (Operator (Hdr _ 2) _ subs) = "min" ++ (parens $ intercalate "" $ map prettyEquation subs)
+prettyEquation (Operator (Hdr _ 3) _ subs) = "max" ++ (parens $ intercalate "" $ map prettyEquation subs)
+prettyEquation (Operator (Hdr _ 5) _ [p, q]) = prettyEquation p ++ " > " ++ prettyEquation q
+prettyEquation (Operator (Hdr _ 6) _ [p, q]) = prettyEquation p ++ " < " ++ prettyEquation q
+prettyEquation (Operator (Hdr _ 7) _ [p, q]) = prettyEquation p ++ " = " ++ prettyEquation q
+
+--instance Show Packet where
+    --show (Literal (Hdr version _) numGroups value)        = (show version) ++ "=" ++ (show value) ++ "(" ++ show numGroups ++ ")"
+    --show (Operator (Hdr version _) lengthType subpackets) = (show version) ++ (lengthTypeMark lengthType) ++ "{" ++ (intercalate ", " $ map show subpackets) ++ "}"
 
 packetLength :: Packet -> Int
 packetLength (Literal _ nGroups _) = 3 + 3 + nGroups * 5
@@ -105,6 +125,8 @@ hexToBits (h:hs) = (bitsFromString firstBits) ++ moreBits
 
 data ParseResult a = PR a BitString | EndOfInput deriving Show
 type Parser a = BitString -> ParseResult a
+
+result (PR res _) = res
 
 ptrace f bs = trace ("TRACE " ++ f ++ " [" ++ bitsToString bs ++ "]")
 
