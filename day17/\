@@ -1,0 +1,3 @@
+data Velocity = V Int Int
+data Position = P Int Int
+data Range = R Int Int
