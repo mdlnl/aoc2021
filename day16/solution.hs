@@ -190,6 +190,14 @@ example4 = doExample example4hex (Operator (Hdr 4 0) [
         ])
     ])
 
+example5hex = "620080001611562C8802118E34"
+example5bits = hexToBits example4hex
+example5 = doExample example5hex $
+    Operator (Hdr 3 0) [
+        Operator (Hdr 0 0) [Literal (Hdr 0 0) 0 0, Literal (Hdr 5 0) 0 0],
+        Operator (Hdr 1 0) [Literal (Hdr 0 0) 0 0, Literal (Hdr 3 0) 0 0]
+    ]
+
 ------------------------------
 -- Actual requested answers --
 
