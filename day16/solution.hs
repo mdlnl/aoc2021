@@ -167,28 +167,31 @@ example1 = doExample "D2FE28" (Literal (Hdr 6 4) 3 2021)
 
 example2hex = "38006F45291200"
 example2bits = hexToBits example2hex
-example2 = doExample example2hex (Operator (Hdr 1 6) [
-        (Literal (Hdr 0 4) 1 10),
-        (Literal (Hdr 0 4) 2 20)
-    ])
+example2 = doExample example2hex $
+    Operator (Hdr 1 6) [
+        Literal (Hdr 0 4) 1 10,
+        Literal (Hdr 0 4) 2 20
+    ]
 
 example3hex = "EE00D40C823060"
 example3bits = hexToBits example3hex
-example3 = doExample example3hex (Operator (Hdr 7 3) [
-        (Literal (Hdr 0 4) 1 1),
-        (Literal (Hdr 0 4) 1 2),
-        (Literal (Hdr 0 4) 1 3)
-    ])
+example3 = doExample example3hex $
+    Operator (Hdr 7 3) [
+        Literal (Hdr 0 4) 1 1,
+        Literal (Hdr 0 4) 1 2,
+        Literal (Hdr 0 4) 1 3
+    ]
 
 example4hex = "8A004A801A8002F478"
 example4bits = hexToBits example4hex
-example4 = doExample example4hex (Operator (Hdr 4 0) [
-        (Operator (Hdr 1 0) [
-            (Operator (Hdr 5 0) [
+example4 = doExample example4hex $
+    Operator (Hdr 4 0) [
+        Operator (Hdr 1 0) [
+            Operator (Hdr 5 0) [
                 (Literal (Hdr 6 0) 0 0)
-            ])
-        ])
-    ])
+            ]
+        ]
+    ]
 
 example5hex = "620080001611562C8802118E34"
 example5bits = hexToBits example4hex
