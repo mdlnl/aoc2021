@@ -1,10 +1,7 @@
 import Split
 
----------------
--- Mechanics --
-
-data Velocity = V Int Int
-instance Show Velocity where show (V u v) = "<" ++ show u ++ ", " ++ show v ++ ">"
+-------------
+-- Geomtry --
 
 data Position = P Int Int deriving Eq
 instance Show Position where show (P x y) = "(" ++ show x ++ ", " ++ show y ++ ")"
@@ -18,6 +15,18 @@ instance Show Box where show (B xr yr) = "{x=" ++ show xr ++ ", y=" ++ show yr +
 
 origin = P 0 0
 
+inRange (R min max) u = min <= u && u <= max
+
+inBox (B xr yr) (P x y) = inRange xr x && inRange yr y
+
+outsideBox b = not . inBox b
+
+---------------
+-- Mechanics --
+
+data Velocity = V Int Int
+instance Show Velocity where show (V u v) = "<" ++ show u ++ ", " ++ show v ++ ">"
+
 half :: Int -> Int
 half n
     | even n    = n `div` 2
@@ -30,12 +39,6 @@ position (V vx0 vy0) n = P
 
 arc :: Velocity -> [Position]
 arc v = map (position v) [0..]
-
-inRange (R min max) u = min <= u && u <= max
-
-inBox (B xr yr) (P x y) = inRange xr x && inRange yr y
-
-outsideBox b = not . inBox b
 
 -- Top of an arcing path. Once it starts to fall, the previous point was the apex.
 apex (p0:p1:ps)
