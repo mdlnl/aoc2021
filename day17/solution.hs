@@ -21,6 +21,8 @@ inBox (B xr yr) (P x y) = inRange xr x && inRange yr y
 
 outsideBox b = not . inBox b
 
+atOrAbove bottom (P _ y) = y >= bottom
+
 ---------------
 -- Mechanics --
 
@@ -49,6 +51,7 @@ apex (p0:p1:ps)
 -- Input and parsers --
 
 sampleInput = "target area: x=20..30, y=-10..-5"
+shouldEverWorkForSampleInput = [V 7 2, V 6 3]
 
 parse :: String -> Box
 parse input = B (parseRange xr) (parseRange yr)
@@ -64,5 +67,7 @@ parseRange (_:'=':r) = R (read low) (read high)
 data Assignment = A Velocity Int
 
 works (A v0 n) t = inBox t $ position v0 n
+
+ever t@(B _ yr@(R bottom _)) v0 = not . null $ takeWhile (atOrAbove bottom) $ arc v0
 
 
