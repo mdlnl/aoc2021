@@ -82,19 +82,19 @@ parsePacket [] = EndOfInput
 parsePacket bs
     | typeId == 4 = parseLiteral header bs
     | otherwise   = parseOperator header bs
-    where (PR header hRemainder) = parseHeader bs
-          (Hdr _ typeId) = header
+    where PR header hRemainder = parseHeader bs
+          Hdr _ typeId = header
 
 parseHeader :: Parser Header  
 parseHeader [] = EndOfInput
 parseHeader bs = PR (Hdr v t) tr
-    where (PR v vr) = parseVersion bs
-          (PR t tr) = parseTypeId vr
+    where PR v vr = parseVersion bs
+          PR t tr = parseTypeId vr
 
 parseLiteral :: Header -> Parser Packet
 parseLiteral h bs = PR packet gRemainder
-    where (PR header hRemainder) = parseHeader bs
-          (PR groups gRemainder) = parseGroups hRemainder
+    where PR header hRemainder = parseHeader bs
+          PR groups gRemainder = parseGroups hRemainder
           value = bits $ concat groups
           packet = Literal h (length groups) value
 
@@ -130,10 +130,10 @@ parseTypeId = parseInt 3
 -- representing the literal value.
 parseGroups :: Parser [BitString]
 parseGroups (Zero:bs) = PR [first] fRemainder
-    where (PR first fRemainder) = parseGroup bs
+    where PR first fRemainder = parseGroup bs
 parseGroups (One:bs) = PR (first:more) mRemainder
-    where (PR first fRemainder) = parseGroup bs
-          (PR more mRemainder) = parseGroups fRemainder
+    where PR first fRemainder = parseGroup bs
+          PR more mRemainder = parseGroups fRemainder
 
 parseGroup :: Parser BitString
 parseGroup bs = PR (take 4 bs) (drop 4 bs)
@@ -158,17 +158,20 @@ example2 = doExample example2hex (Operator (Hdr 1 6) [
         (Literal (Hdr 0 4) 2 20)
     ])
 
-example3 = doExample "EE00D40C823060" (Operator (Hdr 7 3) [
+example3hex = "EE00D40C823060"
+example3bits = hexToBits example3hex
+example3 = doExample example4hex (Operator (Hdr 7 3) [
         (Literal (Hdr 0 4) 1 1),
         (Literal (Hdr 0 4) 1 2),
         (Literal (Hdr 0 4) 1 3)
     ])
 
-example4 = doExample "8A004A801A8002F478" (Operator (Hdr 4 0) [
+example4hex = "8A004A801A8002F478"
+example4bits = hexToBits example4hex
+example4 = doExample example4hex (Operator (Hdr 4 0) [
         (Operator (Hdr 1 0) [
             (Operator (Hdr 5 0) [
-                (Operator (Hdr 6 0) [
-                ])
+                (Literal (Hdr 6 0) 0 0)
             ])
         ])
     ])
