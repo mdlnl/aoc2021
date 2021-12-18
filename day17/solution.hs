@@ -1,3 +1,4 @@
+import Data.Ratio
 import Split
 
 -------------
@@ -26,8 +27,11 @@ atOrAbove bottom (P _ y) = y >= bottom
 ---------------
 -- Mechanics --
 
-data Velocity = V Int Int
+data Velocity = V Int Int deriving Eq
 instance Show Velocity where show (V u v) = "<" ++ show u ++ ", " ++ show v ++ ">"
+instance Ord Velocity where
+    u `compare` v = aa u `compare` aa v
+        where aa = apex . arc
 
 half :: Int -> Int
 half n
@@ -41,7 +45,7 @@ ypos v0 n = n * v0 - (half $ n * (n-1))
 xarc v0 = map (xpos v0) [0..]
 
 position :: Velocity -> Int -> Position
-position (V vx0 vy0) n = P (xpos vx0 n) (ypos vx0 n)
+position (V vx0 vy0) n = P (xpos vx0 n) (ypos vy0 n)
 
 arc :: Velocity -> [Position]
 arc v = map (position v) [0..]
@@ -51,7 +55,7 @@ apex (p0:p1:ps)
     | p0 > p1   = p0
     | otherwise = apex (p1:ps)
 
-apexFrom v0 = apex . arc
+apexStarting = apex . arc
 
 -----------------------
 -- Input and parsers --
@@ -92,12 +96,26 @@ stepsInXrange xr@(R left _) vx0
           inxr = inRange xr . xpos vx0
 
 -- returns a potentially-infinite list!
-xSearchSpace (B xr@(R left right) _)
-    | inRange xr 0 = [(0, [0..])]
-    | 0 < left     = [(vx0, stepsInXrange xr vx0) | vx0 <- filter (everInXRange xr) [1..right]]
+xSearchSpace xr@(R left right)
+    | inRange xr 0 = [0]
+    | 0 < left     = filter (everInXRange xr) [1..right]
     | otherwise    = error "require left <= 0 <= right or 0 < left"
 
---part1 target = maximum $ map apexFrom potentialV0
-    --where potentialVx0 = xSearchSpace target
-          --ySpace = [bottom..top] -- THIS IS WRONG
-          --potentialV0 = filter (ever target) [V vx0 vy0 | vx0 <- potentialVx0, vy0 <- ySpace]
+ySearchSpace yr@(R bottom top)
+    | top < 0   = [0..(-bottom)]
+    | otherwise = error "Require top < 0"
+
+searchSpace b@(B xr yr) = [ V vx0 vy0 | vx0 <- xSearchSpace xr,
+                                        vy0 <- ySearchSpace yr ]
+
+stepsOnTarget t@(B xr yr@(R bottom _)) v0@(V vx0 _) =
+    filter inside $ takeWhile above $ stepsInXrange xr vx0
+    where p = position v0
+          inside = inBox t . p
+          above n = p n >= (P 0 bottom)
+
+everOnTarget t v0 = not $ null $ stepsOnTarget t v0
+
+search target = filter (everOnTarget target) $ searchSpace target
+
+part1 = maximum . search

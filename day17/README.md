@@ -69,6 +69,13 @@ if n != 0 ... vy0 <= (n-1)/2 + top/n
    ow     ... 0 <= top
 ```
 
+Given a similar candidate `vx0` and (potentially infinite) `[n1, n2, ...]`, which values of `n`
+do we need to do the above calulation for?
+
+```
+
+```
+
 ## ugh
 
 ```
