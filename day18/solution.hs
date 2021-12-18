@@ -1,9 +1,10 @@
 import Data.Maybe
 
-data Snailfish = R Int | P Int Snailfish Snailfish deriving Eq
-instance Show Snailfish where
-    show (R r) = show r
-    show (P _ p1 p2) = "[" ++ show p1 ++ "," ++ show p2 ++ "]"
+data Snailfish = R Int | P Int Snailfish Snailfish deriving (Eq, Show)
+--instance Show Snailfish where
+
+pretty (R r) = show r
+pretty (P _ p1 p2) = "[" ++ pretty p1 ++ "," ++ pretty p2 ++ "]"
 
 toParenthesesMap c
     | c == '['  = '('
@@ -15,6 +16,9 @@ data ParseResult a = PR a String deriving (Show)
 
 result (PR r _) = r
 
+parse string = result
+    where PR result [] = parseSnailfish 0 string
+
 parseSnailfish depth s@('[':_) = parsePair depth s
 parseSnailfish depth s@(c:cs) = PR (R (read [c])) cs
 
@@ -22,25 +26,15 @@ parsePair depth ('[':s) = PR (P depth p1 p2) p2rem
     where PR p1 (',':p1rem) = parseSnailfish (depth + 1) s
           PR p2 (']':p2rem) = parseSnailfish (depth + 1) p1rem
 
---data Explosion = Bang Snailfish Int Int | Whimper Snailfish deriving Eq
+data ExplosionState = Searching | Found Int | Added deriving Show
+data ExplosionStep = ExplosionStep ExplosionState Snailfish deriving Show
 
---maybeExplode s@(R _) = Whimper s
---maybeExplode s@(P 3 (P 4 (R r4a) (R r4b)) right)
---    | hasRegular right = Bang (P 3 (R 0) (addToFirstRegular r4b right)) r4a 0
---    | otherwise        = Bang (P 3 (R 0) right) r4a r4b
---maybeExplode (P d a b)
---    | maybeExplode a == Bang afterA leftBlast rightBlast && hasRegular b = Bang (P d afterA (addToFirstRegular rightBlast b)) leftBlast 0
---    | maybeExplode a == Bang afterA leftBlast rightBlast                 = Bang (P d afterA b) leftBlast rightBlast
---    | maybeExplode b == Bang afterB leftBlast rightBlast && hasRegular a = Bang (P d (addToFirstRegular leftBlast a) afterB) 0 rightBlast
---    | maybeExplode b == Bang afterB leftBlast rightBlast                 = Bang (P d a afterB) leftBlast rightBlast
---    | otherwise                                                          = Whimper s
---
---hasRegular (R _) = True
---hasRegular (P _ a b) = (hasRegular a) || (hasRegular b)
---
---addToFirstRegular n (R r) = R $ r + n
---addToFirstRegular n (P d a b)
---    | hasRegular a = P d (addToFirstRegular n a) b
---    | hasRegular b = P d a (addToFirstRegular n b)
---    | otherwise    = P d a b
+boom (ExplosionStep _ s) = s
 
+explodeRight Added s = ExplosionStep Added s
+explodeRight (Found n) (R r) = ExplosionStep Added (R $ n + r)
+explodeRight state (R r) = ExplosionStep state (R r)
+explodeRight Searching (P 4 (R _) (R b)) = ExplosionStep (Found b) (R 0)
+explodeRight state (P d a b) = ExplosionStep afterB (P d ar br)
+    where ExplosionStep afterA ar = explodeRight state a
+          ExplosionStep afterB br = explodeRight afterA b
