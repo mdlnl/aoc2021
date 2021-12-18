@@ -41,7 +41,7 @@ parsePair depth ('[':s) = PR (P depth p1 p2) p2rem
 ---------------
 -- Explosion --
 
-data ExplosionState = Searching | Found Int | Done deriving Show
+data ExplosionState = Searching | Found Int | Done deriving (Eq, Show)
 data ExplosionStep = ExplosionStep ExplosionState Snailfish deriving Show
 
 boom (ExplosionStep _ s) = s
@@ -62,10 +62,10 @@ explodeLeft state (P d a b) = ExplosionStep afterA (P d ar br)
     where ExplosionStep afterB br = explodeLeft state b
           ExplosionStep afterA ar = explodeLeft afterB a
 
-explode sf0 = sf2
+explode sf0 = explodeLeft Searching sf1
     where ExplosionStep after0 sf1 = explodeRight Searching sf0 -- has to happen first since we want leftmost explodable pair
-          ExplosionStep after1 sf2 = explodeLeft  Searching sf1
 
+{-
 explosionTests = do
     putStrLn $ show $ t "[[[[[9,8],1],2],3],4]"                 "[[[[0,9],2],3],4]"
     putStrLn $ show $ t "[7,[6,[5,[4,[3,2]]]]]"                 "[7,[6,[5,[7,0]]]]"
@@ -73,11 +73,12 @@ explosionTests = do
     putStrLn $ show $ t "[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]" "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]"
     putStrLn $ show $ t "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]"     "[[3,[2,[8,0]]],[9,[5,[7,0]]]]"
     where t = test explode "explode"
+    -}
 
 -----------
 -- Split --
 
-data SplitState = Splitting | Split deriving Show
+data SplitState = Splitting | Split deriving (Eq, Show)
 data SplitStep = SplitStep SplitState Snailfish deriving Show
 
 crack (SplitStep _ s) = s
@@ -92,10 +93,31 @@ split d state (P _ a b) = SplitStep afterB (P d ar br)
     where SplitStep afterA ar = split (d + 1) state a
           SplitStep afterB br = split (d + 1) afterA b
 
+{-
 splitTests = do
     putStrLn $ show $ t "[[[[0,7],4],[15,[0,13]]],[1,1]]"    "[[[[0,7],4],[[7,8],[0,13]]],[1,1]]"
     putStrLn $ show $ t "[[[[0,7],4],[[7,8],[0,13]]],[1,1]]" "[[[[0,7],4],[[7,8],[0,[6,7]]]],[1,1]]"
-    where t = test (crack . split 0 Splitting) "split"
+    where t = test (crack . split0) "split"
+    -}
+
+------------
+-- Reduce --
+
+didExplode (ExplosionStep Done _) = True
+didExplode (ExplosionStep (Found _) _) = True
+didExplode _ = False
+
+reduce s
+    | didExplode e    = reduce eResult
+    | sFinal == Split = reduce sResult
+    | otherwise       = s
+    where e@(ExplosionStep _ eResult) = explode s
+          SplitStep sFinal sResult = split0 s
+
+deepen (R r) = R r
+deepen (P d a b) = P (d+1) (deepen a) (deepen b)
+
+add s t = P 0 (deepen s) (deepen t)
 
 -------------
 -- Testing --
