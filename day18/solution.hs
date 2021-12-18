@@ -38,3 +38,11 @@ explodeRight Searching (P 4 (R _) (R b)) = ExplosionStep (Found b) (R 0)
 explodeRight state (P d a b) = ExplosionStep afterB (P d ar br)
     where ExplosionStep afterA ar = explodeRight state a
           ExplosionStep afterB br = explodeRight afterA b
+
+explodeLeft Added s = ExplosionStep Added s
+explodeLeft (Found n) (R r) = ExplosionStep Added (R $ n + r)
+explodeLeft state (R r) = ExplosionStep state (R r)
+explodeLeft Searching (P 4 (R a) (R _)) = ExplosionStep (Found a) (R 0)
+explodeLeft state (P d a b) = ExplosionStep afterA (P d ar br)
+    where ExplosionStep afterB br = explodeLeft state b
+          ExplosionStep afterA ar = explodeLeft afterB a
