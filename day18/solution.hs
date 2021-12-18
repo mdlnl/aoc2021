@@ -1,6 +1,7 @@
 import Data.List
 import Data.Maybe
 import Data.Ratio
+import Debug.Trace
 import Split (nlsplit)
 
 data Snailfish = R Int
@@ -109,8 +110,8 @@ didExplode (ExplosionStep (Found _) _) = True
 didExplode _ = False
 
 reduce s
-    | didExplode e    = reduce eResult
-    | sFinal == Split = reduce sResult
+    | didExplode e    = trace ("exploded " ++ pretty s) $ reduce eResult
+    | sFinal == Split = trace ("split    " ++ pretty s) $ reduce sResult
     | otherwise       = s
     where e@(ExplosionStep _ eResult) = explode s
           SplitStep sFinal sResult = split0 s
