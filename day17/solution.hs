@@ -95,7 +95,7 @@ stepsInXrange xr@(R left _) vx0
 xSearchSpace (B xr@(R left right) _)
     | inRange xr 0 = [(0, [0..])]
     | 0 < left     = [(vx0, stepsInXrange xr vx0) | vx0 <- filter (everInXRange xr) [1..right]]
-    | otherwise    = error "require 0 < left"
+    | otherwise    = error "require left <= 0 <= right or 0 < left"
 
 --part1 target = maximum $ map apexFrom potentialV0
     --where potentialVx0 = xSearchSpace target
