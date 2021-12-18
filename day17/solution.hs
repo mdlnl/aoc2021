@@ -118,4 +118,4 @@ everOnTarget t v0 = not $ null $ stepsOnTarget t v0
 
 search target = filter (everOnTarget target) $ searchSpace target
 
-part1 = maximum . search
+part1 = apexStarting . maximum . search
