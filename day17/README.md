@@ -58,14 +58,15 @@ Given a candiate `vx0` for which `[n1, n2, ...]` satifsfy `left <= x(n) <= right
 y(n) = -1/2 n² + (vy0 + 1/2) n
 
 y(n) >= bottom
--1/2 n² + (vy0 + 1/2) n - bottom >= 0
-A = -1/2
-B = vy0 + 1/2
-C = -bottom
-d = B² - 4 A C = vy0² + vy0/2 + 1/4 - 2 bottom
-if d > 0 ... probe crosses bottom twice. All ns between ceil(small n*) and floor(big n*) are hits.
-   d = 0 ... probe osculates bottom at n*. Maybe one of the two nearest integers to n* is a hit.
-   d < 0 ... probe never crosses bottom. There are no hits.
+-n²/2 + (vy0 + 1/2) n >= bottom
+-n²/2 + vy0 n + n/2 >= bottom
+vy0 n >= n²/2 - n/2 + bottom
+if n != 0 ... vy0 >= (n-1)/2 + bottom/n
+   ow     ... 0 >= bottom
+
+y(n) <= top
+if n != 0 ... vy0 <= (n-1)/2 + top/n
+   ow     ... 0 <= top
 ```
 
 ## ugh
