@@ -1,5 +1,8 @@
+module Grid (Location, Grid, makeGrid, dijkstra) where
+
 import Data.List (intercalate)
 import Data.Map (Map)
+import qualified Data.Map (singleton, insert)
 import Split
 
 type Location = (Int, Int)
@@ -23,12 +26,23 @@ nsew (Grid m n _) (i, j) = filter (boundsCheck m n) [(i-1, j), (i+1, j), (i, j+1
 
 isLocalMinimum grid@(Grid _ _ h) loc = all (\n -> h n > h loc) $ nsew grid loc
 
-allLocalMinima grid@(Grid m n h) = filter (isLocalMinimum grid) [(i, j) | i <- [0..m-1], j <- [0..n-1]]
+allLocalMinima grid@(Grid m n h) = filter (isLocalMinimum grid) (allLocations grid)
+
+allLocations (Grid m n _) = [ (i, j) | i <- [0..m-1], j <- [0..n-1] ]
 
 --------------
 -- Dijkstra --
 
---dijkstra :: Grid -> Location -> Map Location Int
+type Metric :: Location -> Location -> Int
+
+day09metric (Grid _ _ g) _ b = g b
+
+dijkstra :: Num a => Grid a -> Metric -> Location -> Map Location a
+dijkstra g m start = dijkstraAux g m start (allLocations g) (Map.singleton start 0)
+
+dijkstraAux :: Num a => Grid a -> Metric -> Location -> [Location] -> Map Location a -> Map Location a
+dijkstraAux _ _ _ [] dist = dist
+dijkstraAux grid m start (q:qs) dist = 
 
 --------------------------
 -- day09-specific stuff --
