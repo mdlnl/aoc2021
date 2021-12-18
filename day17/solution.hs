@@ -6,6 +6,7 @@ import Split
 
 data Position = P Int Int deriving Eq
 instance Show Position where show (P x y) = "(" ++ show x ++ ", " ++ show y ++ ")"
+-- useful for finding apex
 instance Ord Position where (P _ y1) `compare` (P _ y2) = y1 `compare` y2
 
 data Range = R Int Int
@@ -23,6 +24,7 @@ inBox (B xr yr) (P x y) = inRange xr x && inRange yr y
 
 data Velocity = V Int Int deriving Eq
 instance Show Velocity where show (V u v) = "<" ++ show u ++ ", " ++ show v ++ ">"
+-- useful for finding highest arc
 instance Ord Velocity where
     u `compare` v = aa u `compare` aa v
         where aa = apex . arc
