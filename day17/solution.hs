@@ -14,15 +14,9 @@ instance Show Range where show (R low high) = show low ++ ".." ++ show high
 data Box = B Range Range
 instance Show Box where show (B xr yr) = "{x=" ++ show xr ++ ", y=" ++ show yr ++ "}"
 
-origin = P 0 0
-
 inRange (R min max) u = min <= u && u <= max
 
 inBox (B xr yr) (P x y) = inRange xr x && inRange yr y
-
-outsideBox b = not . inBox b
-
-atOrAbove bottom (P _ y) = y >= bottom
 
 ---------------
 -- Mechanics --
