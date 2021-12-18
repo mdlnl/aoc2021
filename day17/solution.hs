@@ -102,7 +102,7 @@ xSearchSpace xr@(R left right)
     | otherwise    = error "require left <= 0 <= right or 0 < left"
 
 ySearchSpace yr@(R bottom top)
-    | top < 0   = [0..(-bottom)]
+    | top < 0   = [bottom..(-bottom)]
     | otherwise = error "Require top < 0"
 
 searchSpace b@(B xr yr) = [ V vx0 vy0 | vx0 <- xSearchSpace xr,
@@ -119,3 +119,5 @@ everOnTarget t v0 = not $ null $ stepsOnTarget t v0
 search target = filter (everOnTarget target) $ searchSpace target
 
 part1 = apexStarting . maximum . search
+
+part2 = length . search
