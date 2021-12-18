@@ -1,3 +1,4 @@
+import Data.List
 import Data.Maybe
 
 data Snailfish = R Int
@@ -30,6 +31,9 @@ parsePair depth ('[':s) = PR (P depth p1 p2) p2rem
     where PR p1 (',':p1rem) = parseSnailfish (depth + 1) s
           PR p2 (']':p2rem) = parseSnailfish (depth + 1) p1rem
 
+---------------
+-- Explosion --
+
 data ExplosionState = Searching | Found Int | Done deriving Show
 data ExplosionStep = ExplosionStep ExplosionState Snailfish deriving Show
 
@@ -54,3 +58,26 @@ explodeLeft state (P d a b) = ExplosionStep afterA (P d ar br)
 explode sf0 = sf2
     where ExplosionStep after0 sf1 = explodeRight Searching sf0 -- has to happen first since we want leftmost explodable pair
           ExplosionStep after1 sf2 = explodeLeft  Searching sf1
+
+-----------
+-- Split --
+
+
+
+-------------
+-- Testing --
+
+data TestResult = Pass String | Fail String deriving Show
+
+explosionTest input expected
+    | x == e    = Pass $ "explode " ++ input
+    | otherwise = Fail $ "explode " ++ input
+    where x = explode $ parse input
+          e = parse $ expected
+
+explosionTests = do
+    putStrLn $ show $ explosionTest "[[[[[9,8],1],2],3],4]"                 "[[[[0,9],2],3],4]"
+    putStrLn $ show $ explosionTest "[7,[6,[5,[4,[3,2]]]]]"                 "[7,[6,[5,[7,0]]]]"
+    putStrLn $ show $ explosionTest "[[6,[5,[4,[3,2]]]],1]"                 "[[6,[5,[7,0]]],3]"
+    putStrLn $ show $ explosionTest "[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]" "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]"
+    putStrLn $ show $ explosionTest "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]"     "[[3,[2,[8,0]]],[9,[5,[7,0]]]]"
