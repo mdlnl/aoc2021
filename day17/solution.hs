@@ -91,7 +91,6 @@ stepsInXrange xr@(R left _) vx0
     | otherwise           = []
     where inxr = inRange xr . xpos vx0
 
--- returns a potentially-infinite list!
 xSearchSpace xr@(R left right)
     | inRange xr 0 = [0]
     | 0 < left     = filter (everInXRange xr) [1..right]
