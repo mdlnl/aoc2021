@@ -1,6 +1,7 @@
 import Data.List
 import Data.Maybe
 import Data.Ratio
+import Split (nlsplit)
 
 data Snailfish = R Int
                | P Int Snailfish Snailfish
@@ -130,3 +131,15 @@ test f desc input expected
     | otherwise = Fail $ desc ++ " " ++ input
     where x = f $ parse input
           e = parse $ expected
+
+------------
+-- Part 1 --
+
+addAll (s:ss) = foldl (\a b -> reduce $ add a b) s ss
+
+magnitude (R r) = r
+magnitude (P _ a b) = 3 * (magnitude a) + 2 * (magnitude b)
+
+part1 filename = do
+    input <- readFile filename
+    putStrLn $ show $ magnitude $ addAll $ map parse $ nlsplit input
