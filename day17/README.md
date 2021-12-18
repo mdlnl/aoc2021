@@ -39,6 +39,8 @@ will have a .5.
 
 # Solution for target area
 
+## X search space
+
 Assuming the target area is to the right, for what values of `vx0` will the probe ever even pass
 the left edge of the target area?
 
@@ -46,6 +48,27 @@ the left edge of the target area?
 satisfy this first requirement, but not the other (<= `right`), so we'll ignore those.
 
 Which values below `left` will work? We can just brute-force them.
+
+## Y search space
+
+Given a candiate `vx0` for which `[n1, n2, ...]` satifsfy `left <= x(n) <= right`, what potential
+`vy0` values do we need to check?
+
+```
+y(n) = -1/2 n² + (vy0 + 1/2) n
+
+y(n) >= bottom
+-1/2 n² + (vy0 + 1/2) n - bottom >= 0
+A = -1/2
+B = vy0 + 1/2
+C = -bottom
+d = B² - 4 A C = vy0² + vy0/2 + 1/4 - 2 bottom
+if d > 0 ... probe crosses bottom twice. All ns between ceil(small n*) and floor(big n*) are hits.
+   d = 0 ... probe osculates bottom at n*. Maybe one of the two nearest integers to n* is a hit.
+   d < 0 ... probe never crosses bottom. There are no hits.
+```
+
+## ugh
 
 ```
 Exists n : left <= x(n)                      <= right
