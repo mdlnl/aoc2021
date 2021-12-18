@@ -39,6 +39,14 @@ will have a .5.
 
 # Solution for target area
 
+Assuming the target area is to the right, for what values of `vx0` will the probe ever even pass
+the left edge of the target area?
+
+`left` and `right`, as well as anything in between, will work. Anything greater than `right` will
+satisfy this first requirement, but not the other (<= `right`), so we'll ignore those.
+
+Which values below `left` will work? We can just brute-force them.
+
 ```
 Exists n : left <= x(n)                      <= right
            left <= -sx/2 n² + (vx0 + sx/2) n <= right
@@ -47,8 +55,8 @@ Exists n : left <= x(n)                      <= right
            Ax = sx / 2
            Bx = - (vx0 + sx / 2)
            nxL* = [-Bx +- sqrt(Bx² - 4 Ax left)] / (2 Ax)
-                = [-Bx +- sqrt(Bx² - 4 Ax left)] / sx
-           nxR* = [-Bx +- sqrt(Bx² - 4 Ax right)] / sx
+                = [-Bx +- sqrt(Bx² - 2 sx left)] / sx
+           nxR* = [-Bx +- sqrt(Bx² - 2 sx right)] / sx
 
            bottom <= y(n)                    <= top
            bottom <= -1/2 n² + (vy0 + 1/2) n <= top
