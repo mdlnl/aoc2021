@@ -143,3 +143,11 @@ magnitude (P _ a b) = 3 * (magnitude a) + 2 * (magnitude b)
 part1 filename = do
     input <- readFile filename
     putStrLn $ show $ magnitude $ addAll $ map parse $ nlsplit input
+
+------------
+-- Part 2 --
+
+part2 filename = do
+    input <- readFile filename
+    let numbers = map parse $ nlsplit input
+    putStrLn $ show $ maximum $ [magnitude $ reduce $ add a b | a <- numbers, b <- numbers, a /= b]
