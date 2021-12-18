@@ -85,7 +85,7 @@ everInXRange xr@(R left right) vx0
     | 0 < left && vx0 > 0 = not $ null $ filter (inRange xr) $ untilFixedPoint id $ xarc vx0
     | otherwise           = error "require 0 < left and vx0 > 0"
 
--- returns a potentially-infinite list!
+-- Returns a potentially-infinite list! of indices n s.t. x(n) is in the xrange.
 stepsInXrange xr@(R left _) vx0
     | everInXRange xr vx0 = takeWhile inxr $ dropWhile (not . inxr) [1..]
     | otherwise           = []
@@ -103,7 +103,8 @@ ySearchSpace yr@(R bottom top)
 searchSpace b@(B xr yr) = [ V vx0 vy0 | vx0 <- xSearchSpace xr,
                                         vy0 <- ySearchSpace yr ]
 
--- Generates a potentially-infinite list, but truncates it using takeWhile above.
+-- Generates a potentially-infinite list, but truncates it using takeWhile above. List contains
+-- indices n s.t. p(n) is in the target area.
 stepsOnTarget t@(B xr yr@(R bottom _)) v0@(V vx0 _) =
     filter inside $ takeWhile above $ stepsInXrange xr vx0
     where p = position v0               -- map n to pos
