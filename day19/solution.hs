@@ -1,6 +1,8 @@
 import Data.List (intercalate)
 import Data.Map (Map, assocs, singleton, union)
-import qualified Data.Map as Map (lookup)
+import qualified Data.Map as Map
+import Data.MultiMap (MultiMap)
+import qualified Data.MultiMap as MM
 import Data.Maybe
 
 import LCS
@@ -16,20 +18,22 @@ data Vector = V Int Int Int deriving (Eq, Show)
 -- Map from scanner index to position in that scanner's frame.
 type RelativePosition = Map Int Vector
 
--- Each beacon tracks its position relative to every scanner
-data Beacon = Beacon RelativePosition
-instance Show Beacon where
-    show (Beacon rpmap) = "{" ++ intercalate " ; " [
-        show i ++ "->(" ++ show x ++ "," ++ show y ++ "," ++ show z ++ ")"
-        | (i, V x y z) <- assocs rpmap] ++ "}"
+-- Scanner index and beacon index within scanner report
+data BeaconId = BID Int Int
 
-posIn i (Beacon rpmap) = Map.lookup i rpmap
+-- relative position of each beacon
+type ScannerMap = Map BeaconId Vector
+
+-- with beacon equivalence map
+type BeaconEquivalence = MultiMap BeaconId BeaconId
+
+data BeaconData = BD ScannerMap BeaconEquivalence
 
 -------------
 -- Parsing --
 
 parse :: String -> [ScannerReport]
-parse input = parseScannerReports $ nlsplit input
+parse input = arseScannerReports $ nlsplit input
 
 parseScannerReports :: [String] -> [ScannerReport]
 parseScannerReports lines = map parseScannerReport $ split [""] lines
@@ -58,10 +62,11 @@ mag2 u = dot u u
 dist2 u v = mag2 $ minus u v
 
 pairwiseSquaredDistances (Scanner scannerIndex beacons) = quicksort (\(d,_,_) -> d) [
-    (dist2 u v, u, v) | i <- [0..n-1], j <- [i+1..n-1], u <- [bp i], v <- [bp j] ]
+    (dist2 u v, b i, b j) | i <- [0..n-1], j <- [i+1..n-1], u <- [bp i], v <- [bp j] ]
     where posFn = posIn scannerIndex
           beaconPositions = map (fromJust . posFn) beacons
           n = length beaconPositions
+          b = (beacons !!)
           bp = (beaconPositions !!)
 
 -----------------
@@ -69,8 +74,14 @@ pairwiseSquaredDistances (Scanner scannerIndex beacons) = quicksort (\(d,_,_) ->
 
 unify (Beacon b) (Beacon c) = Beacon (union b c)
 
+-- Unify beacon "edges" between two scanner reports; we don't know which is which yet.
+edgeUnify (d1, b1, b2) (d2, c1, c2)
+    | d1 /= d2  = error "Can't unify edges of different lengths."
+    | otherwise = Either (unify b1 c1, unify b2 b2) (unify b1 c2, unify b2 c1)
+
 play filename = do
     input <- readFile filename
     let scanners = parse input
     let psds = map (show . pairwiseSquaredDistances) scanners
+    ---let common = lcsWith (\(a,_,_) (b,_,_) -> a == b) 
     putStrLn $ intercalate "\n" $ psds
