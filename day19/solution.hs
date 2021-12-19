@@ -1,5 +1,5 @@
 import Data.List (intercalate)
-import Data.Map (Map, assocs, singleton)
+import Data.Map (Map, assocs, singleton, union)
 import Split
 
 data ScannerReport = Scanner Int [Beacon]
@@ -38,3 +38,8 @@ parseScannerTitleRow titleRow = read index
 
 parseBeaconPosition line = V (read x) (read y) (read z)
     where [x,y,z] = split "," line
+
+-----------------
+-- Unification -- 
+
+unify (Beacon b) (Beacon c) = Beacon (union b
