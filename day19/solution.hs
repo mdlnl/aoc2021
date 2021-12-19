@@ -2,6 +2,8 @@ import Data.List (intercalate)
 import Data.Map (Map, assocs, singleton, union)
 import qualified Data.Map as Map (lookup)
 import Data.Maybe
+
+import LCS
 import Split
 import Sort
 
@@ -70,4 +72,5 @@ unify (Beacon b) (Beacon c) = Beacon (union b c)
 play filename = do
     input <- readFile filename
     let scanners = parse input
-    putStrLn $ intercalate "\n" $ map (show . pairwiseSquaredDistances) scanners
+    let psds = map (show . pairwiseSquaredDistances) scanners
+    putStrLn $ intercalate "\n" $ psds
