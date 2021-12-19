@@ -1,4 +1,4 @@
-module LCS (lcsWith) where
+module LCS (lcs, lcsWith) where
 
 import Data.Map (Map, assocs)
 import qualified Data.Map as Map
