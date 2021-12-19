@@ -7,11 +7,9 @@ import LCS
 import Split
 import Sort
 
-data Scanner = Scanner Int [Vector]
+data Scanner = Scanner Int Rotation [Vector]
 instance Show Scanner where
-    show (Scanner i bs) = "\nScanner " ++ show i ++ "\n" ++ (intercalate "\n" $ map show bs)
-
-data Vector = V Int Int Int deriving (Eq, Show)
+    show (Scanner i _ bs) = "\nScanner " ++ show i ++ "\n" ++ (intercalate "\n" $ map show bs)
 
 -------------
 -- Parsing --
@@ -24,7 +22,7 @@ parseScanners lines = map parseScanner $ split [""] lines
 
 parseScanner :: [String] -> Scanner
 parseScanner (titleRow:beaconRows) =
-    Scanner (parseScannerTitleRow titleRow) $ map parseBeaconPosition beaconRows
+    Scanner (parseScannerTitleRow titleRow) id $ map parseBeaconPosition beaconRows
 
 parseScannerTitleRow titleRow = read index
     where ["---", "scanner", index, "---"] = words titleRow
@@ -35,6 +33,8 @@ parseBeaconPosition line = V (read x) (read y) (read z)
 --------------
 -- Geometry -- 
 
+data Vector = V Int Int Int deriving (Eq, Show)
+
 minus (V ux uy uz) (V vx vy vz) = V (ux-vx) (uy-vy) (uz-vz)
 
 dot (V ux uy uz) (V vx vy vz) = (ux * vx) + (uy * vy) + (uz * vz)
@@ -43,8 +43,18 @@ mag2 u = dot u u
 
 dist2 u v = mag2 $ minus u v
 
+type Rotation = Vector -> Vector
+rh1 (V x y z) = V x z (-y)
+rh2 (V x y z) = V z y (-x)
+rh3 (V x y z) = V (-y) x z
+lh1 v = rh1 . rh1
+lh2 v = rh2 . rh2
+lh3 v = rh3 . rh3
+
 -----------------
 -- Unification -- 
+
+unify (Scanner i1 r1 b1) (Scanner i2 r2 b2) = [] -- implement me
 
 play filename = do
     input <- readFile filename
