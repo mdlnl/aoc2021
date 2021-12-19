@@ -48,6 +48,23 @@ data ExplosionStep = ExplosionStep ExplosionState Snailfish deriving Show
 
 boom (ExplosionStep _ s) = s
 
+explodeDir exo exc exr Done s = ExplosionStep Done s
+explodeDir exo exc exr (Found n) (R r) = ExplosionStep Done (R $ n + r)
+explodeDir exo exc exr state (R r) = ExplosionStep state (R r)
+explodeDir exo exc exr Searching s@(P 4 (R a) (R b)) = ExplosionStep (Found $ exc s) (exr s)
+explodeDir exo exc exr state s@(P d a b) = ExplosionStep afterob $ exo obr
+    where P d oa ob = exo s
+          ExplosionStep afteroa oar = explodeDir exo exc exr state oa 
+          ExplosionStep afterob obr = explodeDir exo exc exr afteroa ob
+
+exoLTR = id
+excLTR (P 4 (R _) (R b)) = b
+exrLTR (P 4 (R a) (R _)) = X a
+
+exoRTL (P d a b) = P d b a 
+excRTL (X a) = a
+exrRTL (X a) = R 0
+
 explodeRight Done s = ExplosionStep Done s
 explodeRight (Found n) (R r) = ExplosionStep Done (R $ n + r)
 explodeRight state (R r) = ExplosionStep state (R r)
@@ -64,8 +81,8 @@ explodeLeft state (P d a b) = ExplosionStep afterA (P d ar br)
     where ExplosionStep afterB br = explodeLeft state b
           ExplosionStep afterA ar = explodeLeft afterB a
 
-explode sf0 = explodeLeft Searching sf1
-    where ExplosionStep after0 sf1 = explodeRight Searching sf0 -- has to happen first since we want leftmost explodable pair
+explode sf0 = explodeDir exoRTL excRTL exrRTL Searching sf1
+    where ExplosionStep after0 sf1 = explodeDir exoLTR excLTR exrLTR Searching sf0 -- has to happen first since we want leftmost explodable pair
 
 {-
 explosionTests = do
