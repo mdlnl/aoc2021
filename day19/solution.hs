@@ -51,8 +51,18 @@ lh1 v = rh1 . rh1
 lh2 v = rh2 . rh2
 lh3 v = rh3 . rh3
 
+pairwiseSquaredDistances beacons = [ dist2 u v | i <- [0..n-1], u <- [b i],
+                                                 j <- [i+1..n-1], v <- [b j] ]
+    where n = length beacons
+          b = (beacons !!)
+
 -----------------
 -- Unification -- 
+
+distancesPermitUnification (Scanner _ _ b1) (Scanner _ _ b2) =
+        lcsLength psds1 psds2 >= 12
+    where psds1 = quicksort id $ pairwiseSquaredDistances b1
+          psds2 = quicksort id $ pairwiseSquaredDistances b2
 
 unify (Scanner i1 r1 b1) (Scanner i2 r2 b2) = [] -- implement me
 
