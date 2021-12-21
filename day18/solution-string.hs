@@ -1,4 +1,5 @@
 import Data.Maybe
+import Data.Ratio
 import Debug.Trace
 
 ------------
@@ -66,3 +67,19 @@ propagate b cs = show (r + b) ++ rRem
 -----------                           
 -- Split --
 
+split "" = Nothing
+split s@(c:cs)
+    | isJust rPR && r > 9 = Just $ "[" ++ show a ++ "," ++ show b ++ "]" ++ rRem
+    | otherwise           = fmap (c:) $ split cs
+    where rPR = parseRegular s
+          Just (r, rRem) = rPR
+          a = floor $ r % 2
+          b = ceiling $ r % 2
+
+------------
+-- Reduce --
+
+--reduceOnce cs
+--    | isBang ex = 
+--    where ex = explode 0 cs
+--          s = split cs
