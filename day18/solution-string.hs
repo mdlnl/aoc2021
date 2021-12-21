@@ -79,7 +79,11 @@ split s@(c:cs)
 ------------
 -- Reduce --
 
---reduceOnce cs
---    | isBang ex = 
---    where ex = explode 0 cs
---          s = split cs
+reduce cs
+    | isBang e  = reduce eRes
+    | isJust s  = reduce sRes
+    | otherwise = cs
+    where e = explode 0 cs
+          Bang _ eRes = e
+          s = split cs
+          Just sRes = s
