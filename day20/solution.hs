@@ -35,15 +35,29 @@ parseFile filename = do
     input <- readFile filename
     return $ parseInput input
 
-neighborhood :: Int -> Int -> Image -> [Pixel]
-neighborhood i j image = [ pixelAt (i+di, j+dj) image | di <- [-1,0,1], dj <- [-1,0,1] ]
+neighborhood :: (Int, Int) -> Image -> [Pixel]
+neighborhood (i, j) image = [ pixelAt (i+di, j+dj) image | di <- [-1,0,1], dj <- [-1,0,1] ]
 
 toBit :: Pixel -> Int
 toBit Light = 1
 toBit Dark = 0
 
-numberAt :: Int -> Int -> Image -> Int
-numberAt i j image = foldl (\n b -> 2 * n + b) 0 $ map toBit neighborPixels
-    where neighborPixels = neighborhood i j image :: [Pixel]
+numberAt :: (Int, Int) -> Image -> Int
+numberAt ij image = foldl (\n b -> 2 * n + b) 0 $ map toBit neighborPixels
+    where neighborPixels = neighborhood ij image :: [Pixel]
 
-stepPixel algo (i,j) image = algo !! (numberAt (i,j) image)
+stepPixel algo ij image = algo !! (numberAt ij image)
+
+updateImage image Light ij = Map.insert ij Light image
+updateImage image Dark ij  = Map.delete ij       image
+
+stepImage algo (rows, cols, image) = (newRows, newCols, image)
+    where newRows = rows - 2
+          newCols = cols - 2
+          newImageLocations = [ (i,j) | i <- [(-1)..newRows-1],
+                                        j <- [(-1)..newCols-1] ]
+          newImage = foldr (stepPixel algo) image newImageLocations
+
+multistepImage algo state 0 = state
+multistepImage algo state n = multistepImage algo nextState (n-1)
+    where nextState = stepImage algo state
