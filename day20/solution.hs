@@ -37,7 +37,6 @@ parseFile filename = do
 
 neighborhood :: Int -> Int -> Image -> [Pixel]
 neighborhood i j image = [ pixelAt (i+di, j+dj) image | di <- [-1,0,1], dj <- [-1,0,1] ]
---    neighborhoodSampleTest 0 0 "....#.#.."
 
 toBit :: Pixel -> Int
 toBit Light = 1
@@ -47,3 +46,4 @@ numberAt :: Int -> Int -> Image -> Int
 numberAt i j image = foldl (\n b -> 2 * n + b) 0 $ map toBit neighborPixels
     where neighborPixels = neighborhood i j image :: [Pixel]
 
+stepPixel algo (i,j) image = algo !! (numberAt (i,j) image)
