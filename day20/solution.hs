@@ -35,24 +35,15 @@ parseFile filename = do
     input <- readFile filename
     return $ parseInput input
 
+neighborhood :: Int -> Int -> Image -> [Pixel]
 neighborhood i j image = [ pixelAt (i+di, j+dj) image | di <- [-1,0,1], dj <- [-1,0,1] ]
+--    neighborhoodSampleTest 0 0 "....#.#.."
 
+toBit :: Pixel -> Int
 toBit Light = 1
 toBit Dark = 0
 
-toNumber = foldl (\n b -> 2 * n + b) 0 . map toBit 
+numberAt :: Int -> Int -> Image -> Int
+numberAt i j image = foldl (\n b -> 2 * n + b) 0 $ map toBit neighborPixels
+    where neighborPixels = neighborhood i j image :: [Pixel]
 
-numberAt i j image = toNumber $ neighborhood i j image
-
---testNumberAt image (i,j,expected)
---    | actual == expected = Nothing
---    | otherwise          = Just $ "Expected number at " ++ show (i,j) ++ " to be " ++ expected ++ " but was " ++ actual
---    where actual = toNumber i j image
- 
---testNumberAtSampleCases = [
---        (0, 0, 4)
---    ]
-
---testNumberAtSample = do
---    let (_,image) = readFile "sample.txt"
---    putStrLn $ intercalate "\n" $ filter isJust $ map (testNumberAt image) testNumberAtSampleCases
