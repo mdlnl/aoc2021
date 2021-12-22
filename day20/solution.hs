@@ -28,8 +28,10 @@ parseImage lines = Map.fromList [ ((i, j), p i j) | i <- [0..m-1], j <- [0..n-1]
           n = length $ rows !! 0
           p i j = (rows !! i) !! j
 
-parseInput input = (parsePixels algoLine, parseImage imageLines)
+parseInput input = (parsePixels algoLine, rows, cols, parseImage imageLines)
     where algoLine:"":imageLines = nlsplit input
+          rows = length imageLines
+          cols = length $ imageLines !! 0
 
 parseFile filename = do
     input <- readFile filename
@@ -46,18 +48,28 @@ numberAt :: (Int, Int) -> Image -> Int
 numberAt ij image = foldl (\n b -> 2 * n + b) 0 $ map toBit neighborPixels
     where neighborPixels = neighborhood ij image :: [Pixel]
 
-stepPixel algo ij image = algo !! (numberAt ij image)
+stepPixel :: [Pixel] -> (Int, Int) -> Image -> Image
+stepPixel algo ij image = updateImage image ij $ algo !! (numberAt ij image)
 
-updateImage image Light ij = Map.insert ij Light image
-updateImage image Dark ij  = Map.delete ij       image
+updateImage image ij Light = Map.insert ij Light image
+updateImage image ij Dark  = Map.delete ij       image
 
-stepImage algo (rows, cols, image) = (newRows, newCols, image)
+type State = (Int, Int, Image)
+
+stepImage :: [Pixel] -> State -> State
+stepImage algo (rows, cols, image) = (newRows, newCols, newImage)
     where newRows = rows - 2
           newCols = cols - 2
           newImageLocations = [ (i,j) | i <- [(-1)..newRows-1],
                                         j <- [(-1)..newCols-1] ]
           newImage = foldr (stepPixel algo) image newImageLocations
 
+multistepImage :: [Pixel] -> State -> Int -> State
 multistepImage algo state 0 = state
 multistepImage algo state n = multistepImage algo nextState (n-1)
     where nextState = stepImage algo state
+
+part1 filename = do
+    (algo, rows, cols, image) <- parseFile filename
+    let (_,_,finalImage) = multistepImage algo (rows, cols, image) 2
+    putStrLn $ show $ countLight finalImage
