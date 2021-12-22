@@ -20,8 +20,11 @@ countLight = length . (filter (== Light)) . Map.elems
 
 parsePixels = map toPixel
 
-parseImage lines = 
-    where rows = map parsePixels
+parseImage lines = Map.fromList [ ((i, j), p i j) | i <- [0..m-1], j <- [0..n-1] ]
+    where rows = map parsePixels lines
+          m = length lines
+          n = length $ rows !! 0
+          p i j = (rows !! i) !! j
 
 parseInput input = (parsePixels algoLine, parseImage imageLines)
     where algoLine:"":imageLines = nlsplit input
