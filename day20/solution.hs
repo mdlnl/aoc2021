@@ -100,6 +100,9 @@ testNumberAt3 = doTests action [
 stepPixel :: [Pixel] -> (Int, Int) -> Image -> Image
 stepPixel algo ij image = updateImage image ij $ algo !! (numberAt ij image)
 
+testStepPixelSample1 = doTests action [
+    where (algo, _, _, image) = parseFile "sample.txt"
+
 updateImage image ij '#' = Map.insert ij '#' image
 updateImage image ij '.' = Map.delete ij     image
 
@@ -125,6 +128,14 @@ showImage image minRow maxRow minCol maxCol = intercalate "\n" [
 
 ---------------
 -- All Tests --
+
+sampleAlgo = "..#.#..#####.#.#.#.###.##.....###.##.#..###.####..#####..#....#..#..##..###..######.###...####..#..#####..##..#.#####...##.#.#..#.##..#.#......#.###.######.###.####...#.##.##..#..#..#####.....#.#....###..#.##......#.....#. .#..#..##..#...##.######.####.####.#.#...#.......#..#.#.#...####.##.#..... .#..#...##.#.##..#...##.#.##..###.#......#.#.......#.#.#.####.###.##...#.....####.#..#..#.##.#....##..#.####....##...##..#...#......#.#.......#.......##..####..#...#.#.#...##..#.#..###..#####........#..####......#..#"
+
+sampleImage = [ "#..#.",
+                "#....",
+                "##..#",
+                "..#..",
+                "..###" ]
 
 testAll = do
     testNeighborhood2
