@@ -110,8 +110,10 @@ didExplode (ExplosionStep (Found _) _) = True
 didExplode _ = False
 
 reduce s
-    | didExplode e    = trace ("exploded " ++ pretty s) $ reduce eResult
-    | sFinal == Split = trace ("split    " ++ pretty s) $ reduce sResult
+    | didExplode e    = --trace ("exploded " ++ pretty s) $
+                        reduce eResult
+    | sFinal == Split = --trace ("split    " ++ pretty s) $
+                        reduce sResult
     | otherwise       = s
     where e@(ExplosionStep _ eResult) = explode s
           SplitStep sFinal sResult = split0 s
