@@ -44,10 +44,11 @@ neighborhood (i, j) image = [ pixelAt (i+di, j+dj) image | di <- [-1,0,1], dj <-
 testNeighborhood1 = doTests action [
                                      TC (0, 0) "........#",
                                      TC (1, 1) "....#....",
-                                     TC (2, 2) ".#......."
+                                     TC (2, 2) "#........"
                                    ]
     where image = parseImage ["...", ".#.", "..."]
-          action (TC ij e) = expect (show ij) e $ neighborhood ij image
+          action (TC ij e) = expect ("neighborhood (center light) " ++ show ij) e
+                           $ neighborhood ij image
 
 toBit :: Pixel -> Int
 toBit '#' = 1
@@ -63,14 +64,17 @@ testNumberAt1 = doTests action [
                                    TC (2,2) 0
                                ]
     where image = parseImage ["...", "...", "..."]
-          action (TC ij e) = expect ("numberAt " ++ show ij) e $ numberAt ij image
+          action (TC ij e) = expect ("numberAt (all dark) " ++ show ij) e
+                           $ numberAt ij image
 
-testNumberAt2 = map (\(ij, e) -> numberAt ij image == e) [
-        ((0, 0), 1),
-        ((1, 1), 16),
-        ((2, 2), 128)
-    ]
+testNumberAt2 = doTests action [
+                                 TC (0, 0) 1,
+                                 TC (1, 1) 16,
+                                 TC (2, 2) 256
+                               ]
     where image = parseImage ["...", ".#.", "..."]
+          action (TC ij e) = expect ("numberAt (center light) " ++ show ij) e
+                           $ numberAt ij image
 
 
 ------------
@@ -101,6 +105,11 @@ showImage image minRow maxRow minCol maxCol = intercalate "\n" [
         [ pixelAt (i,j) image | j <- [minCol..maxCol] ]
                               | i <- [minRow..maxRow]
     ]
+
+---------------
+-- All Tests --
+
+testAll = do { testNeighborhood1 ; testNumberAt1 ; testNumberAt2 }
 
 part1 filename = do
     (algo, rows0, cols0, image0) <- parseFile filename
