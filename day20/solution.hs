@@ -57,8 +57,13 @@ numberAt :: (Int, Int) -> Image -> Int
 numberAt ij image = foldl (\n b -> 2 * n + b) 0 $ map toBit neighborPixels
     where neighborPixels = neighborhood ij image :: [Pixel]
 
-testNumberAt1 = map (\ij -> numberAt ij image == 0) [ (0,0), (1,1), (2,2) ]
+testNumberAt1 = doTests action [
+                                   TC (0,0) 0,
+                                   TC (1,1) 0,
+                                   TC (2,2) 0
+                               ]
     where image = parseImage ["...", "...", "..."]
+          action (TC ij e) = expect ("numberAt " ++ show ij) e $ numberAt ij image
 
 testNumberAt2 = map (\(ij, e) -> numberAt ij image == e) [
         ((0, 0), 1),
