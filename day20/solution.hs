@@ -13,6 +13,9 @@ instance Show Pixel where
 toPixel '.' = Dark
 toPixel '#' = Light
 
+fromPixel Dark = '.'
+fromPixel Light = '#'
+
 type Image = Map (Int, Int) Pixel
 
 pixelAt :: (Int, Int) -> Image -> Pixel
@@ -58,8 +61,8 @@ type State = (Int, Int, Image)
 
 stepImage :: [Pixel] -> State -> State
 stepImage algo (rows, cols, image) = (newRows, newCols, newImage)
-    where newRows = rows - 2
-          newCols = cols - 2
+    where newRows = rows + 2
+          newCols = cols + 2
           newImageLocations = [ (i,j) | i <- [(-1)..newRows-1],
                                         j <- [(-1)..newCols-1] ]
           newImage = foldr (stepPixel algo) image newImageLocations
@@ -69,7 +72,17 @@ multistepImage algo state 0 = state
 multistepImage algo state n = multistepImage algo nextState (n-1)
     where nextState = stepImage algo state
 
+showImage image minRow maxRow minCol maxCol = intercalate "\n" [
+        [ fromPixel $ pixelAt (i,j) image | j <- [minCol..maxCol] ]
+                                          | i <- [minRow..maxRow]
+    ]
+
 part1 filename = do
-    (algo, rows, cols, image) <- parseFile filename
-    let (_,_,finalImage) = multistepImage algo (rows, cols, image) 2
-    putStrLn $ show $ countLight finalImage
+    (algo, rows0, cols0, image0) <- parseFile filename
+    let state0 = (rows0, cols0, image0)
+    putStrLn $ "Initial:\n" ++ showImage image0 (-1) 5 (-1) 5
+    let state1@(rows1, cols1, image1) = stepImage algo state0
+    putStrLn $ "After 1 step:\n" ++ showImage image1 (-2) 6 (-2) 6
+    let state2@(rows2, cols2, image2) = stepImage algo state1
+    putStrLn $ "After 2 steps:\n" ++ showImage image2 (-3) 7 (-3) 7
+    putStrLn $ show $ countLight image2
