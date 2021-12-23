@@ -1,8 +1,9 @@
-module Testing (TestCase (..), expect) where
+module Testing (TestCase (..), doTests, expect) where
 
+import Data.List (intercalate)
 import Data.Maybe
 
-data TestCase a e = TC a e
+data TestCase i e = TC i e
 
 expect :: (Eq a, Show a) => String -> a -> a -> Maybe String
 expect msg expected actual
@@ -11,3 +12,6 @@ expect msg expected actual
                         ++ ", expected " ++ show expected
                         ++ " but was " ++ show actual
 
+doTests :: (Eq a, Show a) => (TestCase i a -> Maybe String) -> [TestCase i a] -> IO ()
+doTests action cases = do
+    putStrLn $ intercalate "\n" $ map fromJust $ filter isJust $ map action cases

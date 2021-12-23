@@ -41,12 +41,11 @@ parseFile filename = do
 neighborhood :: (Int, Int) -> Image -> [Pixel]
 neighborhood (i, j) image = [ pixelAt (i+di, j+dj) image | di <- [-1,0,1], dj <- [-1,0,1] ]
 
-testNeighborhood1 = do
-    putStrLn $ intercalate "\n" $ map fromJust $ filter (isJust) $ map action [
-                TC (0, 0) "........#",
-                TC (1, 1) "....#....",
-                TC (2, 2) ".#......."
-            ]
+testNeighborhood1 = doTests action [
+                                     TC (0, 0) "........#",
+                                     TC (1, 1) "....#....",
+                                     TC (2, 2) ".#......."
+                                   ]
     where image = parseImage ["...", ".#.", "..."]
           action (TC ij e) = expect (show ij) e $ neighborhood ij image
 
