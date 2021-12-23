@@ -5,33 +5,27 @@ import Data.Maybe
 import Debug.Trace
 import Split
 
-data Pixel = Dark | Light deriving Eq
-instance Show Pixel where
-    show Dark = "."
-    show Light = "#"
+type Pixel = Char
 
-toPixel '.' = Dark
-toPixel '#' = Light
-
-fromPixel Dark = '.'
-fromPixel Light = '#'
+light = '#'
+dark = '.'
 
 type Image = Map (Int, Int) Pixel
 
 pixelAt :: (Int, Int) -> Image -> Pixel
-pixelAt = Map.findWithDefault Dark
+pixelAt = Map.findWithDefault dark
 
-countLight = length . (filter (== Light)) . Map.elems
+countLight = length . (filter (== light)) . Map.elems
 
-parsePixels = map toPixel
+-------------
+-- Parsing --
 
 parseImage lines = Map.fromList [ ((i, j), p i j) | i <- [0..m-1], j <- [0..n-1] ]
-    where rows = map parsePixels lines
-          m = length lines
-          n = length $ rows !! 0
-          p i j = (rows !! i) !! j
+    where m = length lines
+          n = length $ lines !! 0
+          p i j = (lines !! i) !! j
 
-parseInput input = (parsePixels algoLine, rows, cols, parseImage imageLines)
+parseInput input = (algoLine, rows, cols, parseImage imageLines)
     where algoLine:"":imageLines = nlsplit input
           rows = length imageLines
           cols = length $ imageLines !! 0
@@ -40,12 +34,15 @@ parseFile filename = do
     input <- readFile filename
     return $ parseInput input
 
+------------------
+-- Neighborhood --
+
 neighborhood :: (Int, Int) -> Image -> [Pixel]
 neighborhood (i, j) image = [ pixelAt (i+di, j+dj) image | di <- [-1,0,1], dj <- [-1,0,1] ]
 
 toBit :: Pixel -> Int
-toBit Light = 1
-toBit Dark = 0
+toBit '#' = 1
+toBit '.' = 0
 
 numberAt :: (Int, Int) -> Image -> Int
 numberAt ij image = foldl (\n b -> 2 * n + b) 0 $ map toBit neighborPixels
@@ -54,8 +51,8 @@ numberAt ij image = foldl (\n b -> 2 * n + b) 0 $ map toBit neighborPixels
 stepPixel :: [Pixel] -> (Int, Int) -> Image -> Image
 stepPixel algo ij image = updateImage image ij $ algo !! (numberAt ij image)
 
-updateImage image ij Light = Map.insert ij Light image
-updateImage image ij Dark  = Map.delete ij       image
+updateImage image ij '#' = Map.insert ij '#' image
+updateImage image ij '.' = Map.delete ij     image
 
 type State = (Int, Int, Image)
 
@@ -73,8 +70,8 @@ multistepImage algo state n = multistepImage algo nextState (n-1)
     where nextState = stepImage algo state
 
 showImage image minRow maxRow minCol maxCol = intercalate "\n" [
-        [ fromPixel $ pixelAt (i,j) image | j <- [minCol..maxCol] ]
-                                          | i <- [minRow..maxRow]
+        [ pixelAt (i,j) image | j <- [minCol..maxCol] ]
+                              | i <- [minRow..maxRow]
     ]
 
 part1 filename = do
