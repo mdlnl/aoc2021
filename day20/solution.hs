@@ -41,13 +41,22 @@ parseFile filename = do
 neighborhood :: (Int, Int) -> Image -> [Pixel]
 neighborhood (i, j) image = [ pixelAt (i+di, j+dj) image | di <- [-1,0,1], dj <- [-1,0,1] ]
 
-testNeighborhood1 = doTests action [
+testNeighborhood2 = doTests action [
                                      TC (0, 0) "........#",
                                      TC (1, 1) "....#....",
                                      TC (2, 2) "#........"
                                    ]
     where image = parseImage ["...", ".#.", "..."]
           action (TC ij e) = expect ("neighborhood (center light) " ++ show ij) e
+                           $ neighborhood ij image
+
+testNeighborhood3 = doTests action [
+                                     TC (0, 0) ".....#.##",
+                                     TC (1, 1) ".#.###.#.",
+                                     TC (2, 2) "##.#....."
+                                   ]
+    where image = parseImage [".#.", "###", ".#."]
+          action (TC ij e) = expect ("numberAt (plus) " ++ show ij) e
                            $ neighborhood ij image
 
 toBit :: Pixel -> Int
@@ -76,6 +85,14 @@ testNumberAt2 = doTests action [
           action (TC ij e) = expect ("numberAt (center light) " ++ show ij) e
                            $ numberAt ij image
 
+testNumberAt3 = doTests action [
+                                TC (0, 0) $ 1 + 2 + 8,
+                                TC (1, 1) $ 2 + 8 + 16 + 32 + 128,
+                                TC (2, 2) $ 32 + 128 + 256
+                               ]
+    where image = parseImage [".#.", "###", ".#."]
+          action (TC ij e) = expect ("numberAt (plus) " ++ show ij) e
+                           $ numberAt ij image
 
 ------------
 -- Update --
@@ -109,7 +126,12 @@ showImage image minRow maxRow minCol maxCol = intercalate "\n" [
 ---------------
 -- All Tests --
 
-testAll = do { testNeighborhood1 ; testNumberAt1 ; testNumberAt2 }
+testAll = do
+    testNeighborhood2
+    testNeighborhood3
+    testNumberAt1
+    testNumberAt2
+    testNumberAt3
 
 part1 filename = do
     (algo, rows0, cols0, image0) <- parseFile filename
