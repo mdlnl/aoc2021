@@ -4,6 +4,10 @@ import Data.Maybe
 
 data TestCase a e = TC a e
 
-expect msg e a
-    | a == e    = Nothing
-    | otherwise = Just $ "For " ++ msg ++ ", expected " ++ e ++ " but was " ++ a
+expect :: (Eq a, Show a) => String -> a -> a -> Maybe String
+expect msg expected actual
+    | actual == expected = Nothing
+    | otherwise          = Just $ "For " ++ msg
+                        ++ ", expected " ++ show expected
+                        ++ " but was " ++ show actual
+
