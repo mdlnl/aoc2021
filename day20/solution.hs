@@ -59,6 +59,12 @@ testNeighborhood3 = doTests action [
           action (TC ij e) = expect ("numberAt (plus) " ++ show ij) e
                            $ neighborhood ij image
 
+testNeighborhoodSample = doTests action [
+                                            TC (5, 5) "#........"
+                                        ]
+    where action (TC ij e) = expect ("neighborood (sample) " ++ show ij) e
+                           $ neighborhood ij sampleImage
+
 toBit :: Pixel -> Int
 toBit '#' = 1
 toBit '.' = 0
@@ -94,14 +100,28 @@ testNumberAt3 = doTests action [
           action (TC ij e) = expect ("numberAt (plus) " ++ show ij) e
                            $ numberAt ij image
 
+testNumberAtSample = doTests action [
+                                        TC (5, 5) 256
+                                    ]
+    where action (TC ij e) = expect ("numberAt (sample) " ++ show ij) e
+                           $ numberAt ij sampleImage
+
 ------------
 -- Update --
 
 stepPixel :: [Pixel] -> (Int, Int) -> Image -> Image
 stepPixel algo ij image = updateImage image ij $ algo !! (numberAt ij image)
 
-testStepPixelSample1 = doTests action [
-    where (algo, _, _, image) = parseFile "sample.txt"
+testStepPixelSample = doTests action [
+                                        TC (0, 0) '.',
+                                        TC (1, 1) '.',
+                                        TC (2, 2) '#',
+                                        TC (3, 3) '#',
+                                        TC (4, 4) '.',
+                                        TC (5, 5) '.'
+                                     ]
+    where action (TC ij e) = expect ("stepPixel (sample) " ++ show ij) e
+                           $ pixelAt ij $ stepPixel sampleAlgo ij sampleImage
 
 updateImage image ij '#' = Map.insert ij '#' image
 updateImage image ij '.' = Map.delete ij     image
@@ -131,18 +151,61 @@ showImage image minRow maxRow minCol maxCol = intercalate "\n" [
 
 sampleAlgo = "..#.#..#####.#.#.#.###.##.....###.##.#..###.####..#####..#....#..#..##..###..######.###...####..#..#####..##..#.#####...##.#.#..#.##..#.#......#.###.######.###.####...#.##.##..#..#..#####.....#.#....###..#.##......#.....#. .#..#..##..#...##.######.####.####.#.#...#.......#..#.#.#...####.##.#..... .#..#...##.#.##..#...##.#.##..###.#......#.#.......#.#.#.####.###.##...#.....####.#..#..#.##.#....##..#.####....##...##..#...#......#.#.......#.......##..####..#...#.#.#...##..#.#..###..#####........#..####......#..#"
 
-sampleImage = [ "#..#.",
-                "#....",
-                "##..#",
-                "..#..",
-                "..###" ]
+testSampleAlgo = doTests action [ TC 256 '#' ]
+    where action (TC i e) = expect ("algo " ++ show i) e $ sampleAlgo !! i
+
+sampleImage = parseImage [ "#..#.",
+                           "#....",
+                           "##..#",
+                           "..#..",
+                           "..###" ]
+
+-- Sample after 0 steps:
+--   -4   0   4   8
+--   ...............
+-- -4...............
+--   ...............
+--   ...............
+--   ...............
+--  0.....#..#......
+--   .....#.........
+--   .....##..#.....
+--   .......#.......
+--  4.......###.....
+--   ...............
+--   ...............
+--   ...............
+--  8...............
+--   ...............
+
+-- Sample after 1 step:
+--   -4   0   4   8
+--   ...............
+-- -4...............
+--   ...............
+--   ...............
+--   .....##.##.....
+--  0....#..#.#.....
+--   ....##.#..#....
+--   ....####..#....
+--   .....#..##.....
+--  4......##..#....
+--   .......#.#.....
+--   ...............
+--   ...............
+--  8...............
+--   ...............
 
 testAll = do
+    testSampleAlgo
     testNeighborhood2
     testNeighborhood3
+    testNeighborhoodSample
     testNumberAt1
     testNumberAt2
     testNumberAt3
+    testNumberAtSample
+    testStepPixelSample
 
 part1 filename = do
     (algo, rows0, cols0, image0) <- parseFile filename
