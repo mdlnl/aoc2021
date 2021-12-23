@@ -4,6 +4,7 @@ import qualified Data.Map as Map
 import Data.Maybe
 import Debug.Trace
 import Split
+import Testing
 
 type Pixel = Char
 
@@ -40,6 +41,15 @@ parseFile filename = do
 neighborhood :: (Int, Int) -> Image -> [Pixel]
 neighborhood (i, j) image = [ pixelAt (i+di, j+dj) image | di <- [-1,0,1], dj <- [-1,0,1] ]
 
+testNeighborhood1 = do
+    putStrLn $ intercalate "\n" $ map fromJust $ filter (isJust) $ map action [
+                TC (0, 0) "........#",
+                TC (1, 1) "....#....",
+                TC (2, 2) ".#......."
+            ]
+    where image = parseImage ["...", ".#.", "..."]
+          action (TC ij e) = expect (show ij) e $ neighborhood ij image
+
 toBit :: Pixel -> Int
 toBit '#' = 1
 toBit '.' = 0
@@ -47,6 +57,20 @@ toBit '.' = 0
 numberAt :: (Int, Int) -> Image -> Int
 numberAt ij image = foldl (\n b -> 2 * n + b) 0 $ map toBit neighborPixels
     where neighborPixels = neighborhood ij image :: [Pixel]
+
+testNumberAt1 = map (\ij -> numberAt ij image == 0) [ (0,0), (1,1), (2,2) ]
+    where image = parseImage ["...", "...", "..."]
+
+testNumberAt2 = map (\(ij, e) -> numberAt ij image == e) [
+        ((0, 0), 1),
+        ((1, 1), 16),
+        ((2, 2), 128)
+    ]
+    where image = parseImage ["...", ".#.", "..."]
+
+
+------------
+-- Update --
 
 stepPixel :: [Pixel] -> (Int, Int) -> Image -> Image
 stepPixel algo ij image = updateImage image ij $ algo !! (numberAt ij image)
