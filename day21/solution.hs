@@ -77,9 +77,10 @@ initialState startPos = State { player1       = Player { number=1, position=fst 
 ---------
 -- DFS --
 
--- precomputed as [ (s, length $ filter (==s) rolls) | s <- [1..10] ]
+-- precomputed as [ (s, length $ filter (==s) rolls) | s <- [0..10] ]
+--  where rolls = [ a + b + c | a <- [1..3], b <- [1..3], c <- [1..3] ]
 waysToRoll :: Integer -> Integer
-waysToRoll n = [0,0,1,3,6,7,6,3,1,0] !! (fromInteger n)
+waysToRoll n = [0,0,0,1,3,6,7,6,3,1,0] !! (fromInteger n)
 
 wins target player = (score $ player) >= target
 
