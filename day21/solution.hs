@@ -9,28 +9,24 @@ realStartingPosotions = (9 :: Integer, 6 :: Integer)
 ------------
 -- Update --
 
-playUntil :: (State -> Bool) -> State -> State
-playUntil f state
+playUntil :: (State -> Bool) -> Die -> State -> (Die, State)
+playUntil f die state
     | f state   = --trace ("Winner in " ++ show state)
-                  state 
+                  (die, state)
     | otherwise = --trace (show state) $
-                  playUntil f $ playOnce state
+                  playUntil f (consumeNext3 die) $ playOnce state (next3Total die)
 
 hasWinner target state = (score $ player1 state) >= target || (score $ player2 state) >= target
 
 nextPlayer state = if whoseTurn state == 1 then 2 else 1
 
-playOnce :: State -> State
-playOnce state = State { player1       = play currP1 state totalRoll
-                       , player2       = play currP2 state totalRoll
-                       , whoseTurn     = nextPlayer state
-                       , upcomingRolls = drop 3 $ upcomingRolls state
-                       , numRolls      = numRolls state + 3
-                       }
-    where rolls = take 3 $ upcomingRolls state
-          currP1 = player1 state
+playOnce :: State -> Integer -> State
+playOnce state totalRoll = State { player1   = play currP1 state totalRoll
+                                 , player2   = play currP2 state totalRoll
+                                 , whoseTurn = nextPlayer state
+                                 }
+    where currP1 = player1 state
           currP2 = player2 state
-          totalRoll = sum rolls
 
 newPosition p r
     | np > 10   = np - 10
@@ -47,6 +43,25 @@ play player state totalRoll
     | otherwise                        = player
     where newPos = newPosition (position player) totalRoll
 
+----------
+-- Dice --
+
+data Die = Die { upcomingRolls :: [Integer]
+               , numRolls      :: Integer }
+instance Show Die where
+    show die = (show $ next3) ++ "->" ++ (show $ sum next3) ++ " coming; " ++ 
+               (show $ numRolls die) ++ " rolls so far"
+        where next3 = take 3 $ upcomingRolls die
+
+initialDie = Die { upcomingRolls = map (\x -> 1 + (x-1) `mod` 100) [1..]
+                 , numRolls      = 0
+                 }
+
+next3Total die = sum $ take 3 $ upcomingRolls die
+
+consumeNext3 die = Die { upcomingRolls = drop 3 $ upcomingRolls die
+                       , numRolls = 3 + numRolls die }
+
 ----------------
 -- Game state --
 
@@ -57,22 +72,16 @@ instance Show Player where
 data State = State { player1       :: Player
                    , player2       :: Player
                    , whoseTurn     :: Integer
-                   , upcomingRolls :: [Integer]
-                   , numRolls      :: Integer
                    }
 instance Show State where
     show state = (show $ player1 state) ++ "; " ++
                  (show $ player2 state) ++ "; " ++
-                 (show $ whoseTurn state) ++ " to play; " ++
-                 (show $ next3) ++ "->" ++ (show $ sum next3) ++ " coming; " ++ 
-                 (show $ numRolls state) ++ " rolls so far"
-        where next3 = take 3 $ upcomingRolls state
+                 (show $ whoseTurn state) ++ " to play; "
 
 initialState startPos = State { player1       = Player { number=1, position=fst startPos, score=0 }
                               , player2       = Player { number=2, position=snd startPos, score=0 }
                               , whoseTurn     = 1
-                              , upcomingRolls = map (\x -> 1 + (x-1) `mod` 100) [1..]
-                              , numRolls      = 0 }
+                              }
 
 ---------
 -- DFS --
@@ -97,14 +106,12 @@ countWins target w@(p1w, p2w) state
                      , (p1c, p2c) <- [countWins target w
                                   $ State { player1 = play currP1 state totalRoll
                                           , player2 = play currP2 state totalRoll
-                                          , whoseTurn = nextPlayer state
-                                          , upcomingRolls = [1..] -- don't use this!
-                                          , numRolls = -1 } ]       -- or this!
+                                          , whoseTurn = nextPlayer state } ]
                      ]
 
 part1 :: (Integer, Integer) -> Integer
-part1 startPos = losingScore * (numRolls finalState)
-    where finalState = playUntil (hasWinner 1000) $ initialState startPos
+part1 startPos = losingScore * (numRolls finalDie)
+    where (finalDie, finalState) = playUntil (hasWinner 1000) initialDie $ initialState startPos
           p1Score = score $ player1 finalState
           p2Score = score $ player2 finalState
           losingScore = minimum [p1Score, p2Score]
