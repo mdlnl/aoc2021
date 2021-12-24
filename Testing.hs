@@ -13,5 +13,7 @@ expect msg expected actual
                         ++ " but was " ++ show actual
 
 doTests :: (Eq a, Show a) => (TestCase i a -> Maybe String) -> [TestCase i a] -> IO ()
-doTests action cases = do
-    putStrLn $ intercalate "\n" $ map fromJust $ filter isJust $ map action cases
+doTests action cases
+    | errors == [] = do return ()
+    | otherwise    = do putStrLn $ intercalate "\n" errors
+    where errors = map fromJust $ filter isJust $ map action cases
