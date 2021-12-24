@@ -18,31 +18,34 @@ playUntil f state
 
 hasWinner target state = (score $ player1 state) >= target || (score $ player2 state) >= target
 
+nextPlayer state = if whoseTurn state == 1 then 2 else 1
+
 playOnce :: State -> State
-playOnce state = State { player1       = newP1
-                       , player2       = newP2
-                       , whoseTurn     = if whoseTurn state == 1 then 2 else 1
+playOnce state = State { player1       = play currP1 state totalRoll
+                       , player2       = play currP2 state totalRoll
+                       , whoseTurn     = nextPlayer state
                        , upcomingRolls = drop 3 $ upcomingRolls state
                        , numRolls      = numRolls state + 3
                        }
     where rolls = take 3 $ upcomingRolls state
           currP1 = player1 state
           currP2 = player2 state
-          newP1 = if whoseTurn state == 1 then play currP1 state rolls else currP1
-          newP2 = if whoseTurn state == 2 then play currP2 state rolls else currP2
+          totalRoll = sum rolls
 
 newPosition p r
     | np > 10   = np - 10
     | otherwise = np
     where np = p + (r `mod` 10)
 
-play :: Player -> State -> [Integer] -> Player
-play player state rolls = Player { number = number player
-                                 , position = newPos
-                                 , score    = score player + newPos
-                                 }
-    where newPos = --trace (show state) $
-                   newPosition (position player) (sum rolls)
+-- Only updates the player if it's their turn!
+play :: Player -> State -> Integer -> Player
+play player state totalRoll
+    | number player == whoseTurn state = Player { number = number player
+                                                , position = newPos
+                                                , score    = score player + newPos
+                                                }
+    | otherwise                        = player
+    where newPos = newPosition (position player) totalRoll
 
 ----------------
 -- Game state --
@@ -70,6 +73,33 @@ initialState startPos = State { player1       = Player { number=1, position=fst 
                               , whoseTurn     = 1
                               , upcomingRolls = map (\x -> 1 + (x-1) `mod` 100) [1..]
                               , numRolls      = 0 }
+
+---------
+-- DFS --
+
+-- precomputed as [ (s, length $ filter (==s) rolls) | s <- [1..10] ]
+waysToRoll :: Integer -> Integer
+waysToRoll n = [0,0,1,3,6,7,6,3,1,0] !! (fromInteger n)
+
+wins target player = (score $ player) >= target
+
+countWins :: (Integer, Integer) -> State -> (Integer, Integer)
+countWins w@(p1w, p2w) state
+    | hasWinner 21 state = (p1w + if wins 21 $ player1 state then 1 else 0
+                           ,p2w + if wins 21 $ player2 state then 1 else 0)
+    | otherwise          = foldl (\(p1s, p2s) (p1c, p2c) -> (p1s + p1c, p2s + p2c)) (0,0) children
+    where currP1 = player1 state
+          currP2 = player2 state
+          children = [ ( ways * p1c, ways * p2c )
+                     | totalRoll <- [3..9] :: [Integer]
+                     , ways <- [waysToRoll totalRoll]
+                     , (p1c, p2c) <- [countWins w
+                                  $ State { player1 = play currP1 state totalRoll
+                                          , player2 = play currP2 state totalRoll
+                                          , whoseTurn = nextPlayer state
+                                          , upcomingRolls = [1..] -- don't use this!
+                                          , numRolls = -1 } ]       -- or this!
+                     ]
 
 part1 :: (Integer, Integer) -> Integer
 part1 startPos = losingScore * (numRolls finalState)
