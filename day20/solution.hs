@@ -18,6 +18,15 @@ pixelAt = Map.findWithDefault dark
 
 countLight = length . (filter (== light)) . Map.elems
 
+boundingBox image = ( minimum rows, minimum cols, maximum rows, maximum cols )
+    where rows = map fst $ Map.keys image
+          cols = map snd $ Map.keys image
+
+boundingBoxPoints border image =
+        [ (i,j) | i <- [minRow - border .. maxRow + border],
+                  j <- [minCol - border .. maxCol + border] ]
+    where (minRow, minCol, maxRow, maxCol) = boundingBox image
+
 -------------
 -- Parsing --
 
@@ -112,10 +121,7 @@ newPixelIsLight algo currentImage ij = algo !! n == '#'
 
 stepImage :: [Pixel] -> Image -> Image
 stepImage algo currentImage = Map.fromList [ (p, '#') | p <- newLightPixels ]
-    where rows = map fst $ keys currentImage
-          cols = map snd $ keys currentImage
-          newImageLocations = [ (i,j) | i <- [(minimum rows) - 1 .. (maximum rows) + 1],
-                                        j <- [(minimum cols) - 1 .. (maximum cols) + 1] ]
+    where newImageLocations = boundingBoxPoints 1 currentImage
           newLightPixels = filter (newPixelIsLight algo currentImage) newImageLocations
 
 -- testStepImageSample = doTests action [
@@ -128,10 +134,11 @@ multistepImage algo currentImage 0 = currentImage
 multistepImage algo currentImage n = multistepImage algo nextImage (n-1)
     where nextImage = stepImage algo currentImage
 
-showImage image minRow maxRow minCol maxCol = intercalate "\n" [
+showImage image = intercalate "\n" [
         [ pixelAt (i,j) image | j <- [minCol..maxCol] ]
                               | i <- [minRow..maxRow]
     ]
+    where (minRow, minCol, maxRow, maxCol) = boundingBox image
 
 ---------------
 -- All Tests --
@@ -195,9 +202,9 @@ testAll = do
 
 part1 filename = do
     (algo, image0) <- parseFile filename
-    putStrLn $ "Initial:\n" ++ showImage image0 (-1) 5 (-1) 5
+--    putStrLn $ "Initial:\n" ++ showImage image0
     let image1 = stepImage algo image0
-    putStrLn $ "After 1 step:\n" ++ showImage image1 (-2) 6 (-2) 6
+--    putStrLn $ "After 1 step:\n" ++ showImage image1
     let image2 = stepImage algo image1
-    putStrLn $ "After 2 steps:\n" ++ showImage image2 (-3) 7 (-3) 7
+--    putStrLn $ "After 2 steps:\n" ++ showImage image2
     putStrLn $ show $ countLight image2
