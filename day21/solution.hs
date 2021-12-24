@@ -109,9 +109,16 @@ countWins target w@(p1w, p2w) state
                                           , whoseTurn = nextPlayer state } ]
                      ]
 
+-------------
+-- Answers --
+
 part1 :: (Integer, Integer) -> Integer
 part1 startPos = losingScore * (numRolls finalDie)
     where (finalDie, finalState) = playUntil (hasWinner 1000) initialDie $ initialState startPos
           p1Score = score $ player1 finalState
           p2Score = score $ player2 finalState
           losingScore = minimum [p1Score, p2Score]
+
+part2 :: (Integer, Integer) -> Integer
+part2 startPos = min p1wins p2wins
+    where (p1wins, p2wins) = countWins 21 (0,0) $ initialState startPos
