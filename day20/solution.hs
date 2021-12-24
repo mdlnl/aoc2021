@@ -63,7 +63,7 @@ testNeighborhoodSample = doTests action [
                                             TC (5, 5) "#........"
                                         ]
     where action (TC ij e) = expect ("neighborood (sample) " ++ show ij) e
-                           $ neighborhood ij sampleImage
+                           $ neighborhood ij sampleImage0
 
 toBit :: Pixel -> Int
 toBit '#' = 1
@@ -104,13 +104,14 @@ testNumberAtSample = doTests action [
                                         TC (5, 5) 256
                                     ]
     where action (TC ij e) = expect ("numberAt (sample) " ++ show ij) e
-                           $ numberAt ij sampleImage
+                           $ numberAt ij sampleImage0
 
 ------------
 -- Update --
 
-stepPixel :: [Pixel] -> (Int, Int) -> Image -> Image
-stepPixel algo ij image = updateImage image ij $ algo !! (numberAt ij image)
+stepPixel :: [Pixel] -> Image -> (Int, Int) -> Image -> Image
+stepPixel algo currentImage ij nextImage =
+    updateImage nextImage ij $ algo !! (numberAt ij currentImage)
 
 testStepPixelSample = doTests action [
                                         TC (0, 0) '.',
@@ -121,7 +122,7 @@ testStepPixelSample = doTests action [
                                         TC (5, 5) '.'
                                      ]
     where action (TC ij e) = expect ("stepPixel (sample) " ++ show ij) e
-                           $ pixelAt ij $ stepPixel sampleAlgo ij sampleImage
+                           $ pixelAt ij $ stepPixel sampleAlgo sampleImage0 ij Map.empty
 
 updateImage image ij '#' = Map.insert ij '#' image
 updateImage image ij '.' = Map.delete ij     image
@@ -134,7 +135,12 @@ stepImage algo (rows, cols, image) = (newRows, newCols, newImage)
           newCols = cols + 2
           newImageLocations = [ (i,j) | i <- [(-1)..newRows-1],
                                         j <- [(-1)..newCols-1] ]
-          newImage = foldr (stepPixel algo) image newImageLocations
+          newImage = foldr (stepPixel algo image) Map.empty newImageLocations
+
+-- testStepImageSample = doTests action [
+--                             TC (5, 5, sampleImage0) (7, 7, sampleImage1)
+--                         ]
+--     where action (TC image 
 
 multistepImage :: [Pixel] -> State -> Int -> State
 multistepImage algo state 0 = state
@@ -154,11 +160,11 @@ sampleAlgo = "..#.#..#####.#.#.#.###.##.....###.##.#..###.####..#####..#....#..#
 testSampleAlgo = doTests action [ TC 256 '#' ]
     where action (TC i e) = expect ("algo " ++ show i) e $ sampleAlgo !! i
 
-sampleImage = parseImage [ "#..#.",
-                           "#....",
-                           "##..#",
-                           "..#..",
-                           "..###" ]
+sampleImage0 = parseImage [ "#..#.",
+                            "#....",
+                            "##..#",
+                            "..#..",
+                            "..###" ]
 
 -- Sample after 0 steps:
 --   -4   0   4   8
