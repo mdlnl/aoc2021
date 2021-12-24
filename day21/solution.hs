@@ -3,8 +3,8 @@ import Debug.Trace
 -----------
 -- Input --
 
-sampleStartingPositions = (4 :: Int, 8 :: Int)
-realStartingPosotions = (9 :: Int, 6 :: Int)
+sampleStartingPositions = (4 :: Integer, 8 :: Integer)
+realStartingPosotions = (9 :: Integer, 6 :: Integer)
 
 ------------
 -- Update --
@@ -36,7 +36,7 @@ newPosition p r
     | otherwise = np
     where np = p + (r `mod` 10)
 
-play :: Player -> State -> [Int] -> Player
+play :: Player -> State -> [Integer] -> Player
 play player state rolls = Player { number = number player
                                  , position = newPos
                                  , score    = score player + newPos
@@ -47,15 +47,15 @@ play player state rolls = Player { number = number player
 ----------------
 -- Game state --
 
-data Player = Player { number::Int, position::Int, score::Int }
+data Player = Player { number::Integer, position::Integer, score::Integer }
 instance Show Player where
     show player = (show $ number player) ++ "=" ++ (show $ score player) ++ "@" ++ (show $ position player)
 
 data State = State { player1       :: Player
                    , player2       :: Player
-                   , whoseTurn     :: Int
-                   , upcomingRolls :: [Int]
-                   , numRolls      :: Int
+                   , whoseTurn     :: Integer
+                   , upcomingRolls :: [Integer]
+                   , numRolls      :: Integer
                    }
 instance Show State where
     show state = (show $ player1 state) ++ "; " ++
@@ -71,7 +71,7 @@ initialState startPos = State { player1       = Player { number=1, position=fst 
                               , upcomingRolls = map (\x -> 1 + (x-1) `mod` 100) [1..]
                               , numRolls      = 0 }
 
-part1 :: (Int, Int) -> Int
+part1 :: (Integer, Integer) -> Integer
 part1 startPos = losingScore * (numRolls finalState)
     where finalState = playUntil (hasWinner 1000) $ initialState startPos
           p1Score = score $ player1 finalState
