@@ -16,7 +16,7 @@ playUntil f state
     | otherwise = --trace (show state) $
                   playUntil f $ playOnce state
 
-hasWinner state = (score $ player1 state) >= 1000 || (score $ player2 state) >= 1000
+hasWinner target state = (score $ player1 state) >= target || (score $ player2 state) >= target
 
 playOnce :: State -> State
 playOnce state = State { player1       = newP1
@@ -73,7 +73,7 @@ initialState startPos = State { player1       = Player { number=1, position=fst 
 
 part1 :: (Int, Int) -> Int
 part1 startPos = losingScore * (numRolls finalState)
-    where finalState = playUntil hasWinner $ initialState startPos
+    where finalState = playUntil (hasWinner 1000) $ initialState startPos
           p1Score = score $ player1 finalState
           p2Score = score $ player2 finalState
           losingScore = minimum [p1Score, p2Score]
