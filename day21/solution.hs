@@ -83,17 +83,17 @@ waysToRoll n = [0,0,1,3,6,7,6,3,1,0] !! (fromInteger n)
 
 wins target player = (score $ player) >= target
 
-countWins :: (Integer, Integer) -> State -> (Integer, Integer)
-countWins w@(p1w, p2w) state
-    | hasWinner 21 state = (p1w + if wins 21 $ player1 state then 1 else 0
-                           ,p2w + if wins 21 $ player2 state then 1 else 0)
+countWins :: Integer -> (Integer, Integer) -> State -> (Integer, Integer)
+countWins target w@(p1w, p2w) state
+    | hasWinner target state = (p1w + if wins target $ player1 state then 1 else 0
+                               ,p2w + if wins target $ player2 state then 1 else 0)
     | otherwise          = foldl (\(p1s, p2s) (p1c, p2c) -> (p1s + p1c, p2s + p2c)) (0,0) children
     where currP1 = player1 state
           currP2 = player2 state
           children = [ ( ways * p1c, ways * p2c )
                      | totalRoll <- [3..9] :: [Integer]
                      , ways <- [waysToRoll totalRoll]
-                     , (p1c, p2c) <- [countWins w
+                     , (p1c, p2c) <- [countWins target w
                                   $ State { player1 = play currP1 state totalRoll
                                           , player2 = play currP2 state totalRoll
                                           , whoseTurn = nextPlayer state
