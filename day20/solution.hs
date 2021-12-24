@@ -1,5 +1,5 @@
 import Data.List (intercalate)
-import Data.Map (Map)
+import Data.Map (Map, keys)
 import qualified Data.Map as Map
 import Data.Maybe
 import Debug.Trace
@@ -26,10 +26,8 @@ parseImage lines = Map.fromList [ ((i, j), p i j) | i <- [0..m-1], j <- [0..n-1]
           n = length $ lines !! 0
           p i j = (lines !! i) !! j
 
-parseInput input = (algoLine, rows, cols, parseImage imageLines)
+parseInput input = (algoLine, parseImage imageLines)
     where algoLine:"":imageLines = nlsplit input
-          rows = length imageLines
-          cols = length $ imageLines !! 0
 
 parseFile filename = do
     input <- readFile filename
@@ -109,43 +107,26 @@ testNumberAtSample = doTests action [
 ------------
 -- Update --
 
-stepPixel :: [Pixel] -> Image -> (Int, Int) -> Image -> Image
-stepPixel algo currentImage ij nextImage =
-    updateImage nextImage ij $ algo !! (numberAt ij currentImage)
+newPixelIsLight algo currentImage ij = algo !! n == '#'
+    where n = numberAt ij currentImage
 
-testStepPixelSample = doTests action [
-                                        TC (0, 0) '.',
-                                        TC (1, 1) '.',
-                                        TC (2, 2) '#',
-                                        TC (3, 3) '#',
-                                        TC (4, 4) '.',
-                                        TC (5, 5) '.'
-                                     ]
-    where action (TC ij e) = expect ("stepPixel (sample) " ++ show ij) e
-                           $ pixelAt ij $ stepPixel sampleAlgo sampleImage0 ij Map.empty
-
-updateImage image ij '#' = Map.insert ij '#' image
-updateImage image ij '.' = Map.delete ij     image
-
-type State = (Int, Int, Image)
-
-stepImage :: [Pixel] -> State -> State
-stepImage algo (rows, cols, image) = (newRows, newCols, newImage)
-    where newRows = rows + 2
-          newCols = cols + 2
-          newImageLocations = [ (i,j) | i <- [(-1)..newRows-1],
-                                        j <- [(-1)..newCols-1] ]
-          newImage = foldr (stepPixel algo image) Map.empty newImageLocations
+stepImage :: [Pixel] -> Image -> Image
+stepImage algo currentImage = Map.fromList [ (p, '#') | p <- newLightPixels ]
+    where rows = map fst $ keys currentImage
+          cols = map snd $ keys currentImage
+          newImageLocations = [ (i,j) | i <- [(minimum rows) - 1 .. (maximum rows) + 1],
+                                        j <- [(minimum cols) - 1 .. (maximum cols) + 1] ]
+          newLightPixels = filter (newPixelIsLight algo currentImage) newImageLocations
 
 -- testStepImageSample = doTests action [
 --                             TC (5, 5, sampleImage0) (7, 7, sampleImage1)
 --                         ]
 --     where action (TC image 
 
-multistepImage :: [Pixel] -> State -> Int -> State
-multistepImage algo state 0 = state
-multistepImage algo state n = multistepImage algo nextState (n-1)
-    where nextState = stepImage algo state
+multistepImage :: [Pixel] -> Image -> Int -> Image
+multistepImage algo currentImage 0 = currentImage
+multistepImage algo currentImage n = multistepImage algo nextImage (n-1)
+    where nextImage = stepImage algo currentImage
 
 showImage image minRow maxRow minCol maxCol = intercalate "\n" [
         [ pixelAt (i,j) image | j <- [minCol..maxCol] ]
@@ -211,14 +192,12 @@ testAll = do
     testNumberAt2
     testNumberAt3
     testNumberAtSample
-    testStepPixelSample
 
 part1 filename = do
-    (algo, rows0, cols0, image0) <- parseFile filename
-    let state0 = (rows0, cols0, image0)
+    (algo, image0) <- parseFile filename
     putStrLn $ "Initial:\n" ++ showImage image0 (-1) 5 (-1) 5
-    let state1@(rows1, cols1, image1) = stepImage algo state0
+    let image1 = stepImage algo image0
     putStrLn $ "After 1 step:\n" ++ showImage image1 (-2) 6 (-2) 6
-    let state2@(rows2, cols2, image2) = stepImage algo state1
+    let image2 = stepImage algo image1
     putStrLn $ "After 2 steps:\n" ++ showImage image2 (-3) 7 (-3) 7
     putStrLn $ show $ countLight image2
