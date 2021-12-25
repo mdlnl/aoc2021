@@ -1,2 +1,2 @@
-np x
+inp x
 mul x -1

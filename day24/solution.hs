@@ -1,4 +1,5 @@
 import Data.Char
+import Data.List (intercalate)
 import Data.Map (Map, fromList, insert)
 import qualified Data.Map as Map
 import Data.Maybe
@@ -50,7 +51,9 @@ run :: [Integer] -> [Instruction] -> Memory
 run inputs = fst . foldl step (initialMemory, inputs)
 
 isValid :: [Instruction] -> Integer -> Bool
-isValid program number = z == 0
+isValid program number
+    | elem 0 digits = False
+    | otherwise     = z == 0
     where digits = map read $ map (:[]) $ show number
           mem = run digits program
           z = fromJust $ Map.lookup Z mem
@@ -64,8 +67,8 @@ findMaxValidInput program = filter (isValid program) [99999999999999,99999999999
 
 capitalize (c:cs) = toUpper c : cs
 
-parseIntruction :: String -> Instruction
-parseIntruction line
+parseInstruction :: String -> Instruction
+parseInstruction line
     | o == Inp                 = Inst Inp a Empty
     | elem (bWord !! 0) "wxyz" = Inst o a $ Var $ (read $ capitalize bWord :: Variable)
     | otherwise                = Inst o a $ Lit $ (read bWord :: Integer)
@@ -75,3 +78,12 @@ parseIntruction line
           aWord : _ = argWords
           a = read $ capitalize aWord :: Variable
           [_, bWord] = argWords
+
+parseProgram :: String -> [Instruction]
+parseProgram = map parseInstruction . nlsplit
+
+part1 filename = do
+    input <- readFile filename
+    let program = parseProgram input
+    putStrLn $ intercalate "\n" $ map show $ take 10 program
+    putStrLn $ show $ findMaxValidInput program
