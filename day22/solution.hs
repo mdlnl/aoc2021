@@ -1,15 +1,22 @@
 import Split
 import Testing
 
+-----------
+-- Types --
+
 data Range = Range { from::Int, to::Int } deriving Eq
 instance Show Range where show (Range f t) = show f ++ ".." ++ show t
 
 data Value = On | Off deriving (Eq, Show)
 
 data RebootStep = RebootStep { value::Value, xrange::Range, yrange::Range, zrange::Range } deriving Eq
-instance Show RebootStep where show (RebootStep v xr yr zr) = show v ++ "x=" ++ show xr
-                                                                     ++ "y=" ++ show yr
-                                                                     ++ "z=" ++ show zr
+instance Show RebootStep where show (RebootStep v xr yr zr) = show v ++ " "
+                                                                     ++ "x=" ++ show xr
+                                                                     ++ ",y=" ++ show yr
+                                                                     ++ ",z=" ++ show zr
+
+-------------
+-- Parsing --
 
 parseRange labeledRange = Range { from = read fromStr :: Int, to = read toStr :: Int }
     where [_, fromDotDotTo] = split "=" labeledRange
