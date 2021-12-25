@@ -7,11 +7,11 @@ import Split
 
 data Variable = W | X | Y | Z deriving (Eq, Ord, Read, Show)
 
-data Arg = Var Variable | Lit Integer | Empty deriving (Read, Show)
+data Arg = Var Variable | Lit Integer | Empty deriving (Eq, Read, Show)
 
 data Op = Inp | Add | Mul | Div | Mod | Eql deriving (Eq, Read, Show)
 
-data Instruction = Inst { operator::Op, left::Variable, right::Arg }
+data Instruction = Inst { operator::Op, left::Variable, right::Arg } deriving Eq
 instance Show Instruction where
     show (Inst Inp var _)    = "inp " ++ shuncap var
     show (Inst op a (Lit x)) = shuncap op ++ " " ++ shuncap a ++ " " ++ show x
@@ -82,8 +82,45 @@ parseInstruction line
 parseProgram :: String -> [Instruction]
 parseProgram = map parseInstruction . nlsplit
 
+--------------
+-- Chunking --
+
+-- Each chunk is an input into the given variable, followed by a bunch of instructions 
+-- that have no inputs.
+data Chunk = Chunk (Maybe Variable) [Instruction] deriving Show
+
+isInput (Inst Inp _ _) = True
+isInput _              = False
+
+chunk :: [Instruction] -> ([Chunk], [Instruction])
+chunk [] = ([], [])
+chunk (instruction : instructions) = (Chunk maybeInput chunkInstructions : remainingChunks, rem)
+    where (chunkInstructions, oneRem) = chunkOnce instructions
+          (remainingChunks, rem) = chunk oneRem
+          maybeInput = if isInput instruction then Just $ left instruction else Nothing
+
+chunkOnce :: [Instruction] -> ([Instruction], [Instruction])
+chunkOnce [] = ([], [])
+chunkOnce instructions@(Inst Inp _ _ : _) = ([], instructions)
+chunkOnce (instruction : instructions)  = (instruction : chunkInstructions, rem)
+    where (chunkInstructions, rem) = chunkOnce instructions
+
+unchunk :: [Chunk] -> [Instruction]
+unchunk = concat . map unchunkOnce
+
+unchunkOnce :: Chunk -> [Instruction]
+unchunkOnce (Chunk (Just var) instructions) = Inst Inp var Empty : instructions
+unchunkOnce (Chunk Nothing instructions)    =                      instructions
+
+
+-----------
+-- Parts --
+
 part1 filename = do
     input <- readFile filename
     let program = parseProgram input
-    putStrLn $ intercalate "\n" $ map show $ take 10 program
-    putStrLn $ show $ findMaxValidInput program
+    let (chunks, _) = chunk program
+    putStrLn $ show $ unchunk chunks == program
+    putStrLn $ show program
+    putStrLn $ show chunks
+    putStrLn $ show $ unchunk chunks
