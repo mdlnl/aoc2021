@@ -11,26 +11,34 @@ type Pixel = Char
 light = '#'
 dark = '.'
 
-type Image = Map (Int, Int) Pixel
+data Image = Image { minRow  :: Int
+                   , minCol  :: Int
+                   , maxRow  :: Int
+                   , maxCol  :: Int
+                   , pixels  :: Map (Int, Int) Pixel
+                   , outside :: Pixel
+                   }
 
 pixelAt :: (Int, Int) -> Image -> Pixel
-pixelAt = Map.findWithDefault dark
+pixelAt ij@(i, j) image
+    | i < minRow image || i > maxRow image || j < minCol image || j > maxCol image = outside image
+    | otherwise = Map.findWithDefault dark ij $ pixels image
 
-countLight = length . (filter (== light)) . Map.elems
-
-boundingBox image = ( minimum rows, minimum cols, maximum rows, maximum cols )
-    where rows = map fst $ Map.keys image
-          cols = map snd $ Map.keys image
+countLight = length . (filter (== light)) . Map.elems . pixels
 
 boundingBoxPoints border image =
-        [ (i,j) | i <- [minRow - border .. maxRow + border],
-                  j <- [minCol - border .. maxCol + border] ]
-    where (minRow, minCol, maxRow, maxCol) = boundingBox image
+        [ (i,j) | i <- [(minRow image) - border .. (maxRow image) + border],
+                  j <- [(minCol image) - border .. (maxCol image) + border] ]
 
 -------------
 -- Parsing --
 
-parseImage lines = Map.fromList [ ((i, j), p i j) | i <- [0..m-1], j <- [0..n-1] ]
+parseImage lines = Image { minRow=0
+                         , minCol=0
+                         , maxRow=m-1
+                         , maxCol=n-1
+                         , outside = dark
+                         , pixels = Map.fromList [ ((i, j), p i j) | i <- [0..m-1], j <- [0..n-1] ] }
     where m = length lines
           n = length $ lines !! 0
           p i j = (lines !! i) !! j
@@ -120,9 +128,16 @@ newPixelIsLight algo currentImage ij = algo !! n == '#'
     where n = numberAt ij currentImage
 
 stepImage :: [Pixel] -> Image -> Image
-stepImage algo currentImage = Map.fromList [ (p, '#') | p <- newLightPixels ]
+stepImage algo currentImage = Image { minRow = (minRow currentImage) - 1
+                                    , minCol = (minCol currentImage) - 1
+                                    , maxRow = (maxRow currentImage) + 1
+                                    , maxCol = (maxRow currentImage) + 1
+                                    , outside = algo !! (numberAt outsideIJ currentImage)
+                                    , pixels = Map.fromList [ (p, '#') | p <- newLightPixels ] }
     where newImageLocations = boundingBoxPoints 1 currentImage
           newLightPixels = filter (newPixelIsLight algo currentImage) newImageLocations
+          outsideIJ = (maxRow currentImage + 1, maxCol currentImage + 1)
+          newOutside = algo !! (numberAt outsideIJ currentImage)
 
 -- testStepImageSample = doTests action [
 --                             TC (5, 5, sampleImage0) (7, 7, sampleImage1)
@@ -135,10 +150,9 @@ multistepImage algo currentImage n = multistepImage algo nextImage (n-1)
     where nextImage = stepImage algo currentImage
 
 showImage image = intercalate "\n" [
-        [ pixelAt (i,j) image | j <- [minCol..maxCol] ]
-                              | i <- [minRow..maxRow]
+        [ pixelAt (i,j) image | j <- [minCol image..maxCol image] ]
+                              | i <- [minRow image..maxRow image]
     ]
-    where (minRow, minCol, maxRow, maxCol) = boundingBox image
 
 ---------------
 -- All Tests --
@@ -202,9 +216,9 @@ testAll = do
 
 part1 filename = do
     (algo, image0) <- parseFile filename
---    putStrLn $ "Initial:\n" ++ showImage image0
+    putStrLn $ "Initial:\n" ++ showImage image0
     let image1 = stepImage algo image0
---    putStrLn $ "After 1 step:\n" ++ showImage image1
+    putStrLn $ "After 1 step:\n" ++ showImage image1
     let image2 = stepImage algo image1
---    putStrLn $ "After 2 steps:\n" ++ showImage image2
+    putStrLn $ "After 2 steps:\n" ++ showImage image2
     putStrLn $ show $ countLight image2
