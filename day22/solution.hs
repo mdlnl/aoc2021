@@ -122,5 +122,11 @@ part2 filename = do
     rebootSteps <- parseFile filename
     let c0 = cuboid $ rebootSteps !! 0
     let cs = drop 1 $ map cuboid $ rebootSteps
-    let sec = foldl smallestEnclosingCuboid c0 cs
+    let sec@(xr, yr, zr) = foldl smallestEnclosingCuboid c0 cs
     putStrLn $ show sec
+    let secPoints = [ (x, y, z) | x <- [from xr..to xr]
+                                , y <- [from yr..to yr]
+                                , z <- [from zr..to zr] ]
+    let reverseSteps = reverse rebootSteps
+    let numberOn = length $ filter (==On) $ map (firstInside reverseSteps) secPoints
+    putStrLn $ show numberOn
