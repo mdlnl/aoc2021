@@ -71,7 +71,7 @@ testInside = doTests action [ TC ( -1,  20, 40) False
           action (TC i e) = expect "inside" e $ inside i rs
 
 
-stateAfter xyz rebootSteps 
+stateAfter rebootSteps xyz 
     | values == [] = Off
     | otherwise    = last values
     where values = map value $ filter (inside xyz) rebootSteps
@@ -83,3 +83,15 @@ testAll = do
     testParseRange
     testParseRebootStep
     testInside
+
+-------------------
+-- Problem parts --
+
+cuboid50 = [ (x, y, z) | x <- [-50..50]
+                       , y <- [-50..50]
+                       , z <- [-50..50] ]
+
+part1 filename = do
+    rebootSteps <- parseFile filename
+    let numberOn = length $ filter (==On) $ map (stateAfter rebootSteps) cuboid50
+    putStrLn $ show numberOn
