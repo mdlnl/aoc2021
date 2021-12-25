@@ -7,7 +7,7 @@ data Variable = W | X | Y | Z deriving (Eq, Ord)
 
 data Arg = Var Variable | Lit Integer | Empty
 
-data Op = Ins | Add | Mul | Div | Mod | Eql
+data Op = Inp | Add | Mul | Div | Mod | Eql
 
 data Instruction = Inst { operator::Op, left::Variable, right::Arg }
 
@@ -29,7 +29,7 @@ get (Lit x) _ = x
 type State = (Memory, [Integer])
 
 step :: State -> Instruction -> State
-step (mem, inp:inps) (Inst Ins var _) = (insert var inp mem,      inps)
+step (mem, inp:inps) (Inst Inp var _) = (insert var inp mem,      inps)
 step (mem, inputs)   instruction      = (insert dest (o a b) mem, inputs) 
     where dest = left instruction
           a = fromJust $ Map.lookup dest mem
@@ -38,3 +38,13 @@ step (mem, inputs)   instruction      = (insert dest (o a b) mem, inputs)
 
 run :: [Integer] -> [Instruction] -> Memory
 run inputs = fst . foldl step (initialMemory, inputs)
+
+isValid :: [Instruction] -> Integer -> Bool
+isValid program number = z == 0
+    where digits = map read $ map (:[]) $ show number
+          mem = run digits program
+          z = fromJust $ Map.lookup Z mem
+
+maxInput = 99999999999999
+
+findMaxValidInput program = filter (isValid program) [99999999999999,99999999999998..] !! 0
