@@ -216,9 +216,9 @@ testAll = do
 
 part1 filename = do
     (algo, image0) <- parseFile filename
-    putStrLn $ "Initial:\n" ++ showImage image0
+--    putStrLn $ "Initial:\n" ++ showImage image0
     let image1 = stepImage algo image0
-    putStrLn $ "After 1 step:\n" ++ showImage image1
+--    putStrLn $ "After 1 step:\n" ++ showImage image1
     let image2 = stepImage algo image1
-    putStrLn $ "After 2 steps:\n" ++ showImage image2
+--    putStrLn $ "After 2 steps:\n" ++ showImage image2
     putStrLn $ show $ countLight image2
