@@ -15,6 +15,8 @@ instance Show RebootStep where show (RebootStep v xr yr zr) = show v ++ " "
                                                                      ++ ",y=" ++ show yr
                                                                      ++ ",z=" ++ show zr
 
+type Point = (Int, Int, Int)
+
 -------------
 -- Parsing --
 
@@ -49,3 +51,35 @@ parseInput input = map parseRebootStep $ nlsplit input
 parseFile filename = do
     input <- readFile filename
     return $ parseInput input
+
+----------------
+-- Insideness --
+
+inRange :: Int -> Range -> Bool
+inRange x (Range from to) = from <= x && x <= to
+
+inside :: Point -> RebootStep -> Bool
+inside (x, y, z) (RebootStep _ xr yr zr) =  inRange x xr
+                                         && inRange y yr
+                                         && inRange z zr
+
+testInside = doTests action [ TC ( -1,  20, 40) False
+                            , TC (  0,  20, 40) True
+                            , TC ( 11,  20, 40) False
+                            ]
+    where rs = RebootStep On (Range 0 10) (Range 20 30) (Range 40 50)
+          action (TC i e) = expect "inside" e $ inside i rs
+
+
+stateAfter xyz rebootSteps 
+    | values == [] = Off
+    | otherwise    = last values
+    where values = map value $ filter (inside xyz) rebootSteps
+
+-----------
+-- Tests --
+
+testAll = do
+    testParseRange
+    testParseRebootStep
+    testInside
