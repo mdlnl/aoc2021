@@ -76,6 +76,11 @@ stateAfter rebootSteps xyz
     | otherwise    = last values
     where values = map value $ filter (inside xyz) rebootSteps
 
+firstInside reverseSteps xyz
+    | first == [] = Off
+    | otherwise   = value $ first !! 0
+    where first = take 1 $ filter (inside xyz) reverseSteps
+
 -----------
 -- Tests --
 
@@ -93,5 +98,7 @@ cuboid50 = [ (x, y, z) | x <- [-50..50]
 
 part1 filename = do
     rebootSteps <- parseFile filename
+    let reverseSteps = reverse rebootSteps
     let numberOn = length $ filter (==On) $ map (stateAfter rebootSteps) cuboid50
+    --let numberOn = length $ filter (==On) $ map (firstInside reverseSteps) cuboid50
     putStrLn $ show numberOn
