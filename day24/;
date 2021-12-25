@@ -11,15 +11,6 @@ data Arg = Var Variable | Lit Integer | Empty deriving (Read, Show)
 data Op = Inp | Add | Mul | Div | Mod | Eql deriving (Eq, Read, Show)
 
 data Instruction = Inst { operator::Op, left::Variable, right::Arg }
-instance Show Instruction where
-    show (Inst Inp var _)    = "inp " ++ shuncap var
-    show (Inst op a (Lit x)) = shuncap op ++ " " ++ shuncap a ++ " " ++ show x
-    show (Inst op a (Var v)) = shuncap op ++ " " ++ shuncap a ++ " " ++ shuncap v
-
-uncap (c:cs) = toLower c : cs
-
-shuncap :: Show a => a -> String
-shuncap = uncap . show
 
 op :: Op -> (Integer -> Integer -> Integer)
 op Add = (+)
@@ -66,12 +57,12 @@ capitalize (c:cs) = toUpper c : cs
 
 parseIntruction :: String -> Instruction
 parseIntruction line
-    | o == Inp                 = Inst Inp a Empty
-    | elem (bWord !! 0) "wxyz" = Inst o a $ Var $ (read $ capitalize bWord :: Variable)
-    | otherwise                = Inst o a $ Lit $ (read bWord :: Integer)
+    | o == Inp                 = Inst Inp a
+    | elem (bWord !! 0) "wxyz" = Inst o a $ Var $ read $ toUpper bWord
+    | otherwise                = Inst o a $ Lit $ read bWord
     where words = split " " line
           opWord : argWords = words
-          o = read $ capitalize opWord :: Op
+          o = read opWord :: Op
           aWord : _ = argWords
-          a = read $ capitalize aWord :: Variable
+          a = read aWord :: Variable
           [_, bWord] = argWords
