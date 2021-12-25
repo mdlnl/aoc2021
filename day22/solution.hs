@@ -17,6 +17,11 @@ instance Show RebootStep where show (RebootStep v xr yr zr) = show v ++ " "
 
 type Point = (Int, Int, Int)
 
+type Cuboid = (Range, Range, Range)
+
+cuboid :: RebootStep -> Cuboid
+cuboid (RebootStep _ xr yr zr) = (xr, yr, zr)
+
 -------------
 -- Parsing --
 
@@ -81,6 +86,16 @@ firstInside reverseSteps xyz
     | otherwise   = value $ first !! 0
     where first = take 1 $ filter (inside xyz) reverseSteps
 
+
+smallestEnclosingRange :: Range -> Range -> Range
+smallestEnclosingRange (Range f1 t1) (Range f2 t2) = Range (min f1 f2) (max t1 t2)
+
+smallestEnclosingCuboid :: Cuboid -> Cuboid -> Cuboid
+smallestEnclosingCuboid (cx, cy, cz) (dx, dy, dz) = (xr, yr, zr)
+    where xr = smallestEnclosingRange cx dx
+          yr = smallestEnclosingRange cy dy
+          zr = smallestEnclosingRange cz dz
+
 -----------
 -- Tests --
 
@@ -102,3 +117,10 @@ part1 filename = do
     let numberOn = length $ filter (==On) $ map (stateAfter rebootSteps) cuboid50
     --let numberOn = length $ filter (==On) $ map (firstInside reverseSteps) cuboid50
     putStrLn $ show numberOn
+
+part2 filename = do
+    rebootSteps <- parseFile filename
+    let c0 = cuboid $ rebootSteps !! 0
+    let cs = drop 1 $ map cuboid $ rebootSteps
+    let sec = foldl smallestEnclosingCuboid c0 cs
+    putStrLn $ show sec
