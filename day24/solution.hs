@@ -112,6 +112,10 @@ unchunkOnce :: Chunk -> [Instruction]
 unchunkOnce (Chunk (Just var) instructions) = Inst Inp var Empty : instructions
 unchunkOnce (Chunk Nothing instructions)    =                      instructions
 
+--------
+-- DP --
+
+-- Array of length 14: A[d] is the largest valid input ending in d or something, argh
 
 -----------
 -- Parts --
