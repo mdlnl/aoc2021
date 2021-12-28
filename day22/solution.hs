@@ -132,9 +132,21 @@ data Octree = Node { bottom        :: Point
             | Empty
             deriving (Eq)
 
+isEmpty Empty = True
+isEmpty _ = False
+
 showOctree depth Empty = (take depth $ repeat ' ') ++ "()"
-showOctree depth node  = (take depth $ repeat ' ') ++ (show $ localCuboid node) ++ "{\n" ++ (intercalate "\n"
-                       $ map (showOctree (depth + 1)) $ branchList node) ++ "}"
+showOctree depth node  = (take depth $ repeat ' ') ++ (show $ localCuboid node) ++ "{"
+                      ++ showChild ">= x, >= y, >= z" aboveRightOut
+                      ++ showChild ">= x, >= y, <  z" aboveRightIn
+                      ++ showChild ">= x, <  y, >= z" belowRightOut
+                      ++ showChild ">= x, <  y, <  z" belowRightIn
+                      ++ showChild "<  x, >= y, >= z" aboveLeftOut
+                      ++ showChild "<  x, >= y, <  z" aboveLeftIn
+                      ++ showChild "<  x, <  y, >= z" belowLeftOut
+                      ++ showChild "<  x, <  y, <  z" belowLeftIn
+                      ++ " }"
+    where showChild s c = if c node == Empty then "" else "\n" ++ s ++ showOctree (depth + 1) (c node)
 instance Show Octree where show node = showOctree 0 node
 
 leaf b t = Node { bottom        = b
@@ -161,8 +173,7 @@ fromCuboid (xr, yr, zr) = leaf bottom top
 branchList Empty = []
 branchList (Node _ _ blo bli bro bri alo ali aro ari) = [blo, bli, bro, bri, alo, ali, aro, ari]
 
-localCuboid Empty = Nothing
-localCuboid node = Just (Range bx tx, Range by ty, Range bz tz)
+localCuboid node = (Range bx tx, Range by ty, Range bz tz)
     where (bx, by, bz) = bottom node
           (tx, ty, tz) = top node
 
@@ -182,8 +193,10 @@ nonempty (Range xf xt, Range yf yt, Range zf zt)
 octreeVolume :: Octree -> Int
 octreeVolume ot = (localVolume ot) + (sum $ map octreeVolume $ branchList ot)
 
+leaf510 = fromCuboid (Range 5 10, Range 50 100, Range 500 1000)
+
 testOctreeVolume = doTests action [
-        TC (fromCuboid (Range 5 10, Range 50 100, Range 500 1000)) (6 * 51 * 501),
+        TC leaf510 (6 * 51 * 501),
         TC Empty 0 ]
     where action (TC i e) = expect "octree volume" e $ octreeVolume i
 
@@ -211,18 +224,33 @@ insert c@(xr, yr, zr) ot
                         , aboveRightIn = newAri
                         , aboveRightOut = newAro }
     | otherwise  = ot
-    where (rx, ry, rz) = bottom ot
-          newBli = insert (botChop rx xr, botChop ry yr, botChop rz zr) (belowLeftIn ot)
-          newBlo = insert (botChop rx xr, botChop ry yr, topChop rz zr) (belowLeftOut ot)
-          newAli = insert (botChop rx xr, topChop ry yr, botChop rz zr) (aboveLeftIn ot)
-          newAlo = insert (botChop rx xr, topChop ry yr, topChop rz zr) (aboveLeftOut ot)
-          newBri = insert (topChop rx xr, botChop ry yr, botChop rz zr) (belowRightIn ot)
-          newBro = insert (topChop rx xr, botChop ry yr, topChop rz zr) (belowRightOut ot)
-          newAri = insert (topChop rx xr, topChop ry yr, botChop rz zr) (aboveRightIn ot)
-          newAro = insert (topChop rx xr, topChop ry yr, topChop rz zr) (aboveRightOut ot)
+    where (bx, by, bz) = bottom ot
+          newBli = insert (botChop bx xr, botChop by yr, botChop bz zr) (belowLeftIn ot)
+          newBlo = insert (botChop bx xr, botChop by yr, topChop bz zr) (belowLeftOut ot)
+          newAli = insert (botChop bx xr, topChop by yr, botChop bz zr) (aboveLeftIn ot)
+          newAlo = insert (botChop bx xr, topChop by yr, topChop bz zr) (aboveLeftOut ot)
+          newBri = insert (topChop bx xr, botChop by yr, botChop bz zr) (belowRightIn ot)
+          newBro = insert (topChop bx xr, botChop by yr, topChop bz zr) (belowRightOut ot)
+          newAri = insert (topChop bx xr, topChop by yr, botChop bz zr) (aboveRightIn ot)
+          newAro = insert (topChop bx xr, topChop by yr, topChop bz zr) (aboveRightOut ot)
           (newAroX, newAroY, newAroZ) = top newAro
           (tx, ty, tz) = top ot
           newTop = (min newAroX tx, min newAroY ty, min newAroZ tz)
+
+testInsertLeaf510 = doTests action [
+        TC (Range 1 2, Range 50 100, Range 500 1000) $
+                Node { bottom = (5, 50, 500)
+                     , top    = (10, 100, 1000)
+                     , belowLeftIn = Empty
+                     , belowLeftOut = Empty
+                     , aboveLeftIn = Empty
+                     , aboveLeftOut = leaf (1, 50, 500) (2, 100, 1000)
+                     , belowRightIn = Empty
+                     , belowRightOut = Empty
+                     , aboveRightIn = Empty
+                     , aboveRightOut = Empty }
+        ]
+    where action (TC i e) = expect ("insert " ++ show i ++ " leaf510") e $ insert i e
 
 -----------
 -- Tests --
@@ -232,6 +260,7 @@ testAll = do
     testParseRebootStep
     testInside
     testOctreeVolume
+    testInsertLeaf510
 
 -------------------
 -- Problem parts --
