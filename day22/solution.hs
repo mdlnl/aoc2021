@@ -9,9 +9,9 @@ data Range = Range { from::Int, to::Int } deriving Eq
 instance Show Range where show (Range f t) = show f ++ ".." ++ show t
 
 middle :: Range -> Int
-middle (R f t) = (f + t) `div` 2
+middle (Range f t) = (f + t) `div` 2
 
-rlen (R f t) = t - f + 1
+rlen (Range f t) = t - f + 1
 
 data Value = On | Off deriving (Eq, Show)
 
@@ -29,23 +29,13 @@ bottomCorner :: Cuboid -> Point
 bottomCorner (Range xf _, Range yf _, Range zf _) = (xf, yf, zf)
 
 topCorner :: Cuboid -> Point
-topCorner (Range _ xt, Range yt, Range zt) = (xt, yt, zt)
+topCorner (Range _ xt, Range _ yt, Range _ zt) = (xt, yt, zt)
 
 volume :: Cuboid -> Int
 volume (xr, yr, zr) = (rlen xr) * (rlen yr) * (rlen zr)
 
 cuboid :: RebootStep -> Cuboid
 cuboid (RebootStep _ xr yr zr) = (xr, yr, zr)
-
-({=) :: Cuboid -> Point -> Bool
-(xr yr zr) {{ (x y z) = from xr <= x && x <= to xr
-                     && from yr <= y && y <= to yr
-                     && from zr <= z && z <= to zr
-
-({{) :: Cuboid -> Point -> Bool
-(xr yr zr) {{ (x y z) = from xr <= x && x < to xr
-                     && from yr <= y && y < to yr
-                     && from zr <= z && z < to zr
 
 center :: Cuboid -> Point
 center (xr, yr, zr) = (middle xr, middle yr, middle zr)
@@ -139,9 +129,10 @@ data Octree = Node { bottom        :: Point
                    , aboveRightIn  :: Octree
                    }
             | Empty
+            deriving (Eq, Show)
 
-leaf r c = Node { bottom        = r
-                , top           = c
+leaf b t = Node { bottom        = b
+                , top           = t
                 , belowLeftOut  = Empty
                 , belowLeftIn   = Empty
                 , belowRightOut = Empty
@@ -150,6 +141,21 @@ leaf r c = Node { bottom        = r
                 , aboveLeftIn   = Empty
                 , aboveRightOut = Empty
                 , aboveRightIn  = Empty }
+
+withBottom b (Node _ top blo bli bro bri alo ali aro ari) = Node b top blo bli bro bri alo ali aro ari
+withTop t (Node bottom _ blo bli bro bri alo ali aro ari) = Node bottom t blo bli bro bri alo ali aro ari
+withCuboid (xr, yr, zr) node = withBottom bottom $ withTop top node
+    where bottom = (from xr, from yr, from zr)
+          top = (to xr, to yr, to zr)
+
+fromCuboid (xr, yr, zr) = leaf bottom top
+    where bottom = (from xr, from yr, from zr)
+          top = (to xr, to yr, to zr)
+
+testWithCuboidLeaf510 = doTests action [
+        TC (Range 6 7, Range 60 70, Range 600 700) $ fromCuboid (Range 6 10, Range 60 100, Range 600 1000) ]
+    where octree = fromCuboid (Range 5 10, Range 50 100, Range 500 1000)
+          action (TC i e) = expect "withCuboid >< $ leaf 5 10 ..." e $ withCuboid i octree
 
 branchList Empty = []
 branchList (Node _ _ blo bli bro bri alo ali aro ari) = [blo, bli, bro, bri, alo, ali, aro, ari]
@@ -168,9 +174,10 @@ nonempty (Range xf xt, Range yf yt, Range zf zt)
     | otherwise = True
 
 octreeVolume :: Octree -> Int
-octreeVolume ot = (localVolume ot) + sum $ map octreeVolume $ branchList ot
+octreeVolume ot = (localVolume ot) + (sum $ map octreeVolume $ branchList ot)
 
 testOctreeVolume = doTests action [
+        TC (fromCuboid (Range 5 10, Range 50 100, Range 500 1000)) (6 * 51 * 501),
         TC Empty 0 ]
     where action (TC i e) = expect "octree volume" e $ octreeVolume i
 
@@ -190,14 +197,14 @@ insert c@(xr, yr, zr) ot
     | nonempty c = Empty -- TODO: implement this
     | otherwise  = ot
     where (rx, ry, rz) = bottom ot
-          newBro = insert (topChop rx xr, botChop ry yr, topChop rz zr) (bottomRightOut ot)
-          newBri = insert (topChop rx xr, botChop ry yr, botChop rz zr) (bottomRightIn ot)
-          newBlo = insert (botChop rx xr, botChop ry yr, topChop rz zr) (bottomRightOut ot)
-          newBli = insert (botChop rx xr, botChop ry yr, botChop rz zr) (bottomRightIn ot)
-          newTro = insert (topChop rx xr, topChop ry yr, topChop rz zr) (bottomRightOut ot)
-          newTri = insert (topChop rx xr, topChop ry yr, botChop rz zr) (bottomRightIn ot)
-          newTlo = insert (botChop rx xr, topChop ry yr, topChop rz zr) (bottomRightOut ot)
-          newTli = insert (botChop rx xr, topChop ry yr, botChop rz zr) (bottomRightIn ot)
+          newBro = insert (topChop rx xr, botChop ry yr, topChop rz zr) (belowRightOut ot)
+          newBri = insert (topChop rx xr, botChop ry yr, botChop rz zr) (belowRightIn ot)
+          newBlo = insert (botChop rx xr, botChop ry yr, topChop rz zr) (belowRightOut ot)
+          newBli = insert (botChop rx xr, botChop ry yr, botChop rz zr) (belowRightIn ot)
+          newTro = insert (topChop rx xr, topChop ry yr, topChop rz zr) (belowRightOut ot)
+          newTri = insert (topChop rx xr, topChop ry yr, botChop rz zr) (belowRightIn ot)
+          newTlo = insert (botChop rx xr, topChop ry yr, topChop rz zr) (belowRightOut ot)
+          newTli = insert (botChop rx xr, topChop ry yr, botChop rz zr) (belowRightIn ot)
 
 -----------
 -- Tests --
@@ -206,6 +213,8 @@ testAll = do
     testParseRange
     testParseRebootStep
     testInside
+    testOctreeVolume
+    testWithCuboidLeaf510
 
 -------------------
 -- Problem parts --
