@@ -1,3 +1,4 @@
+import Data.List (intercalate)
 import Data.Maybe
 import Split
 import Testing
@@ -129,7 +130,12 @@ data Octree = Node { bottom        :: Point
                    , aboveRightIn  :: Octree
                    }
             | Empty
-            deriving (Eq, Show)
+            deriving (Eq)
+
+showOctree depth Empty = (take depth $ repeat ' ') ++ "()"
+showOctree depth node  = (take depth $ repeat ' ') ++ (show $ localCuboid node) ++ "{\n" ++ (intercalate "\n"
+                       $ map (showOctree (depth + 1)) $ branchList node) ++ "}"
+instance Show Octree where show node = showOctree 0 node
 
 leaf b t = Node { bottom        = b
                 , top           = t
@@ -152,13 +158,13 @@ fromCuboid (xr, yr, zr) = leaf bottom top
     where bottom = (from xr, from yr, from zr)
           top = (to xr, to yr, to zr)
 
-testWithCuboidLeaf510 = doTests action [
-        TC (Range 6 7, Range 60 70, Range 600 700) $ fromCuboid (Range 6 10, Range 60 100, Range 600 1000) ]
-    where octree = fromCuboid (Range 5 10, Range 50 100, Range 500 1000)
-          action (TC i e) = expect "withCuboid >< $ leaf 5 10 ..." e $ withCuboid i octree
-
 branchList Empty = []
 branchList (Node _ _ blo bli bro bri alo ali aro ari) = [blo, bli, bro, bri, alo, ali, aro, ari]
+
+localCuboid Empty = Nothing
+localCuboid node = Just (Range bx tx, Range by ty, Range bz tz)
+    where (bx, by, bz) = bottom node
+          (tx, ty, tz) = top node
 
 localVolume Empty = 0
 localVolume node = (d bx tx) * (d by ty) * (d bz tz)
@@ -194,7 +200,16 @@ insert c Empty
     | nonempty c = leaf (bottomCorner c) (topCorner c)
     | otherwise  = Empty
 insert c@(xr, yr, zr) ot
-    | nonempty c = Empty -- TODO: implement this
+    | nonempty c = Node { bottom = bottom ot
+                        , top    = newTop
+                        , belowLeftIn = newBli
+                        , belowLeftOut = newBlo
+                        , aboveLeftIn = newAli
+                        , aboveLeftOut = newAlo
+                        , belowRightIn = newBri
+                        , belowRightOut = newBro
+                        , aboveRightIn = newAri
+                        , aboveRightOut = newAro }
     | otherwise  = ot
     where (rx, ry, rz) = bottom ot
           newBli = insert (botChop rx xr, botChop ry yr, botChop rz zr) (belowLeftIn ot)
@@ -205,6 +220,9 @@ insert c@(xr, yr, zr) ot
           newBro = insert (topChop rx xr, botChop ry yr, topChop rz zr) (belowRightOut ot)
           newAri = insert (topChop rx xr, topChop ry yr, botChop rz zr) (aboveRightIn ot)
           newAro = insert (topChop rx xr, topChop ry yr, topChop rz zr) (aboveRightOut ot)
+          (newAroX, newAroY, newAroZ) = top newAro
+          (tx, ty, tz) = top ot
+          newTop = (min newAroX tx, min newAroY ty, min newAroZ tz)
 
 -----------
 -- Tests --
@@ -214,7 +232,6 @@ testAll = do
     testParseRebootStep
     testInside
     testOctreeVolume
-    testWithCuboidLeaf510
 
 -------------------
 -- Problem parts --
