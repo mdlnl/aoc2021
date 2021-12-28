@@ -1,3 +1,4 @@
+import Data.Maybe
 import Split
 import Testing
 
@@ -6,6 +7,9 @@ import Testing
 
 data Range = Range { from::Int, to::Int } deriving Eq
 instance Show Range where show (Range f t) = show f ++ ".." ++ show t
+
+middle :: Range -> Int
+middle (R f t) = (f + t) `div` 2
 
 data Value = On | Off deriving (Eq, Show)
 
@@ -19,8 +23,27 @@ type Point = (Int, Int, Int)
 
 type Cuboid = (Range, Range, Range)
 
+bottomCorner :: Cuboid -> Point
+bottomCorner (Range xf _, Range yf _, Range zf _) = (xf, yf, zf)
+
+topCorner :: Cuboid -> Point
+topCorner (Range _ xt, Range yt, Range zt) = (xt, yt, zt)
+
 cuboid :: RebootStep -> Cuboid
 cuboid (RebootStep _ xr yr zr) = (xr, yr, zr)
+
+({=) :: Cuboid -> Point -> Bool
+(xr yr zr) {{ (x y z) = from xr <= x && x <= to xr
+                     && from yr <= y && y <= to yr
+                     && from zr <= z && z <= to zr
+
+({{) :: Cuboid -> Point -> Bool
+(xr yr zr) {{ (x y z) = from xr <= x && x < to xr
+                     && from yr <= y && y < to yr
+                     && from zr <= z && z < to zr
+
+center :: Cuboid -> Point
+center (xr, yr, zr) = (middle xr, middle yr, middle zr)
 
 -------------
 -- Parsing --
@@ -95,6 +118,59 @@ smallestEnclosingCuboid (cx, cy, cz) (dx, dy, dz) = (xr, yr, zr)
     where xr = smallestEnclosingRange cx dx
           yr = smallestEnclosingRange cy dy
           zr = smallestEnclosingRange cz dz
+
+-----------------------------------
+-- Octree for storing cuboids in --
+
+data Octree = Node { root          :: Point
+                   , corner        :: Point
+                   , belowLeftOut  :: Octree
+                   , belowLeftIn   :: Octree
+                   , belowRightOut :: Octree
+                   , belowRightIn  :: Octree
+                   , aboveLeftOut  :: Octree
+                   , aboveLeftIn   :: Octree
+                   , aboveRightOut :: Octree
+                   , aboveRightIn  :: Octree
+                   }
+            | Empty
+
+leaf r c = Node { root          = r
+                , corner        = c
+                , belowLeftOut  = Empty
+                , belowLeftIn   = Empty
+                , belowRightOut = Empty
+                , belowRightIn  = Empty
+                , aboveLeftOut  = Empty
+                , aboveLeftIn   = Empty
+                , aboveRightOut = Empty
+                , aboveRightIn  = Empty }
+
+nonempty :: Cuboid -> Bool
+nonempty (Range xf xt, Range yf yt, Range zf zt)
+    | xf > xt   = False
+    | yf > yt   = False
+    | zf > zt   = False
+    | otherwise = True
+
+-- The "bottom" part you get when you cut a range in two
+botChop :: Int -> Range -> Range
+botChop at (Range f t) = Range f (min at t)
+
+-- The "top" part you get when you cut a range in two
+topChop :: Int -> Range -> Range
+topChop at (Range f t) = Range (max at f) t
+
+insert :: Cuboid -> Octree -> Octree
+insert c Empty
+    | nonempty c = leaf (bottomCorner c) (topCorner c)
+    | otherwise  = Empty
+insert c@(xr, yr, zr) ot
+    | nonempty c = ???
+    | otherwise  = ot
+    where (rx, ry, rz) = root ot
+          newBro = insert (topChop rx xr, botChop ry yr, topChop rz zr) (bottomRightOut ot)
+          newBri = insert (topChop rx xr, botChop ry yr, botChop rz zr) (bottomRightIn ot)
 
 -----------
 -- Tests --
