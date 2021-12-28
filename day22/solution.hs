@@ -11,6 +11,8 @@ instance Show Range where show (Range f t) = show f ++ ".." ++ show t
 middle :: Range -> Int
 middle (R f t) = (f + t) `div` 2
 
+rlen (R f t) = t - f + 1
+
 data Value = On | Off deriving (Eq, Show)
 
 data RebootStep = RebootStep { value::Value, xrange::Range, yrange::Range, zrange::Range } deriving Eq
@@ -28,6 +30,9 @@ bottomCorner (Range xf _, Range yf _, Range zf _) = (xf, yf, zf)
 
 topCorner :: Cuboid -> Point
 topCorner (Range _ xt, Range yt, Range zt) = (xt, yt, zt)
+
+volume :: Cuboid -> Int
+volume (xr, yr, zr) = (rlen xr) * (rlen yr) * (rlen zr)
 
 cuboid :: RebootStep -> Cuboid
 cuboid (RebootStep _ xr yr zr) = (xr, yr, zr)
@@ -122,8 +127,8 @@ smallestEnclosingCuboid (cx, cy, cz) (dx, dy, dz) = (xr, yr, zr)
 -----------------------------------
 -- Octree for storing cuboids in --
 
-data Octree = Node { root          :: Point
-                   , corner        :: Point
+data Octree = Node { bottom        :: Point
+                   , top           :: Point
                    , belowLeftOut  :: Octree
                    , belowLeftIn   :: Octree
                    , belowRightOut :: Octree
@@ -135,8 +140,8 @@ data Octree = Node { root          :: Point
                    }
             | Empty
 
-leaf r c = Node { root          = r
-                , corner        = c
+leaf r c = Node { bottom        = r
+                , top           = c
                 , belowLeftOut  = Empty
                 , belowLeftIn   = Empty
                 , belowRightOut = Empty
@@ -146,12 +151,28 @@ leaf r c = Node { root          = r
                 , aboveRightOut = Empty
                 , aboveRightIn  = Empty }
 
+branchList Empty = []
+branchList (Node _ _ blo bli bro bri alo ali aro ari) = [blo, bli, bro, bri, alo, ali, aro, ari]
+
+localVolume Empty = 0
+localVolume node = (d bx tx) * (d by ty) * (d bz tz)
+    where (bx, by, bz) = bottom node
+          (tx, ty, tz) = top node
+          d b t = t - b + 1
+
 nonempty :: Cuboid -> Bool
 nonempty (Range xf xt, Range yf yt, Range zf zt)
     | xf > xt   = False
     | yf > yt   = False
     | zf > zt   = False
     | otherwise = True
+
+octreeVolume :: Octree -> Int
+octreeVolume ot = (localVolume ot) + sum $ map octreeVolume $ branchList ot
+
+testOctreeVolume = doTests action [
+        TC Empty 0 ]
+    where action (TC i e) = expect "octree volume" e $ octreeVolume i
 
 -- The "bottom" part you get when you cut a range in two
 botChop :: Int -> Range -> Range
@@ -166,11 +187,17 @@ insert c Empty
     | nonempty c = leaf (bottomCorner c) (topCorner c)
     | otherwise  = Empty
 insert c@(xr, yr, zr) ot
-    | nonempty c = ???
+    | nonempty c = Empty -- TODO: implement this
     | otherwise  = ot
-    where (rx, ry, rz) = root ot
+    where (rx, ry, rz) = bottom ot
           newBro = insert (topChop rx xr, botChop ry yr, topChop rz zr) (bottomRightOut ot)
           newBri = insert (topChop rx xr, botChop ry yr, botChop rz zr) (bottomRightIn ot)
+          newBlo = insert (botChop rx xr, botChop ry yr, topChop rz zr) (bottomRightOut ot)
+          newBli = insert (botChop rx xr, botChop ry yr, botChop rz zr) (bottomRightIn ot)
+          newTro = insert (topChop rx xr, topChop ry yr, topChop rz zr) (bottomRightOut ot)
+          newTri = insert (topChop rx xr, topChop ry yr, botChop rz zr) (bottomRightIn ot)
+          newTlo = insert (botChop rx xr, topChop ry yr, topChop rz zr) (bottomRightOut ot)
+          newTli = insert (botChop rx xr, topChop ry yr, botChop rz zr) (bottomRightIn ot)
 
 -----------
 -- Tests --
