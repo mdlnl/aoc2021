@@ -181,11 +181,11 @@ testOctreeVolume = doTests action [
         TC Empty 0 ]
     where action (TC i e) = expect "octree volume" e $ octreeVolume i
 
--- The "bottom" part you get when you cut a range in two
+-- The "bottom" part you get when you cut a range in two. May be invalid if you try to cut it outside the range.
 botChop :: Int -> Range -> Range
 botChop at (Range f t) = Range f (min at t)
 
--- The "top" part you get when you cut a range in two
+-- The "top" part you get when you cut a range in two. May be invalid if you try to cut it outside the range.
 topChop :: Int -> Range -> Range
 topChop at (Range f t) = Range (max at f) t
 
@@ -197,14 +197,14 @@ insert c@(xr, yr, zr) ot
     | nonempty c = Empty -- TODO: implement this
     | otherwise  = ot
     where (rx, ry, rz) = bottom ot
-          newBro = insert (topChop rx xr, botChop ry yr, topChop rz zr) (belowRightOut ot)
+          newBli = insert (botChop rx xr, botChop ry yr, botChop rz zr) (belowLeftIn ot)
+          newBlo = insert (botChop rx xr, botChop ry yr, topChop rz zr) (belowLeftOut ot)
+          newAli = insert (botChop rx xr, topChop ry yr, botChop rz zr) (aboveLeftIn ot)
+          newAlo = insert (botChop rx xr, topChop ry yr, topChop rz zr) (aboveLeftOut ot)
           newBri = insert (topChop rx xr, botChop ry yr, botChop rz zr) (belowRightIn ot)
-          newBlo = insert (botChop rx xr, botChop ry yr, topChop rz zr) (belowRightOut ot)
-          newBli = insert (botChop rx xr, botChop ry yr, botChop rz zr) (belowRightIn ot)
-          newTro = insert (topChop rx xr, topChop ry yr, topChop rz zr) (belowRightOut ot)
-          newTri = insert (topChop rx xr, topChop ry yr, botChop rz zr) (belowRightIn ot)
-          newTlo = insert (botChop rx xr, topChop ry yr, topChop rz zr) (belowRightOut ot)
-          newTli = insert (botChop rx xr, topChop ry yr, botChop rz zr) (belowRightIn ot)
+          newBro = insert (topChop rx xr, botChop ry yr, topChop rz zr) (belowRightOut ot)
+          newAri = insert (topChop rx xr, topChop ry yr, botChop rz zr) (aboveRightIn ot)
+          newAro = insert (topChop rx xr, topChop ry yr, topChop rz zr) (aboveRightOut ot)
 
 -----------
 -- Tests --
