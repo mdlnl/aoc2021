@@ -1,5 +1,6 @@
 import Data.List (intercalate)
 import Data.Maybe
+import Debug.Trace
 import Split
 import Testing
 
@@ -118,16 +119,16 @@ smallestEnclosingCuboid (cx, cy, cz) (dx, dy, dz) = (xr, yr, zr)
 -----------------------------------
 -- Octree for storing cuboids in --
 
-data Octree = Node { bottom        :: Point
-                   , top           :: Point
-                   , belowLeftOut  :: Octree
-                   , belowLeftIn   :: Octree
-                   , belowRightOut :: Octree
-                   , belowRightIn  :: Octree
-                   , aboveLeftOut  :: Octree
-                   , aboveLeftIn   :: Octree
-                   , aboveRightOut :: Octree
-                   , aboveRightIn  :: Octree
+data Octree = Node { bottom    :: Point
+                   , top       :: Point
+                   , child_xyz :: Octree
+                   , child_xyZ :: Octree
+                   , child_xYz :: Octree
+                   , child_xYZ :: Octree
+                   , child_Xyz :: Octree
+                   , child_XyZ :: Octree
+                   , child_XYz :: Octree
+                   , child_XYZ :: Octree
                    }
             | Empty
             deriving (Eq)
@@ -135,30 +136,30 @@ data Octree = Node { bottom        :: Point
 isEmpty Empty = True
 isEmpty _ = False
 
-showOctree depth Empty = (take depth $ repeat ' ') ++ "()"
-showOctree depth node  = (take depth $ repeat ' ') ++ (show $ localCuboid node) ++ "{"
-                      ++ showChild ">= x, >= y, >= z" aboveRightOut
-                      ++ showChild ">= x, >= y, <  z" aboveRightIn
-                      ++ showChild ">= x, <  y, >= z" belowRightOut
-                      ++ showChild ">= x, <  y, <  z" belowRightIn
-                      ++ showChild "<  x, >= y, >= z" aboveLeftOut
-                      ++ showChild "<  x, >= y, <  z" aboveLeftIn
-                      ++ showChild "<  x, <  y, >= z" belowLeftOut
-                      ++ showChild "<  x, <  y, <  z" belowLeftIn
-                      ++ " }"
-    where showChild s c = if c node == Empty then "" else "\n" ++ s ++ showOctree (depth + 1) (c node)
-instance Show Octree where show node = showOctree 0 node
+showOctree indent Empty = indent ++ "()"
+showOctree indent node  = (show $ localCuboid node) ++ "{"
+                       ++ showChild "-x -y -z " child_xyz
+                       ++ showChild "-x -y +z " child_xyZ
+                       ++ showChild "-x +y -z " child_xYz
+                       ++ showChild "-x +y +z " child_xYZ
+                       ++ showChild "+x -y -z " child_Xyz
+                       ++ showChild "+x -y +z " child_XyZ
+                       ++ showChild "+x +y -z " child_XYz
+                       ++ showChild "+x +y +z " child_XYZ
+                       ++ " }"
+    where showChild s c = if c node == Empty then "" else "\n" ++ indent ++ s ++ showOctree (' ':' ':indent) (c node)
+instance Show Octree where show node = "\n" ++ showOctree "" node ++ "\n"
 
-leaf b t = Node { bottom        = b
-                , top           = t
-                , belowLeftOut  = Empty
-                , belowLeftIn   = Empty
-                , belowRightOut = Empty
-                , belowRightIn  = Empty
-                , aboveLeftOut  = Empty
-                , aboveLeftIn   = Empty
-                , aboveRightOut = Empty
-                , aboveRightIn  = Empty }
+leaf b t = Node { bottom    = b
+                , top       = t
+                , child_xyz = Empty
+                , child_xyZ = Empty
+                , child_xYz = Empty
+                , child_xYZ = Empty
+                , child_Xyz = Empty
+                , child_XyZ = Empty
+                , child_XYz = Empty
+                , child_XYZ = Empty }
 
 withBottom b (Node _ top blo bli bro bri alo ali aro ari) = Node b top blo bli bro bri alo ali aro ari
 withTop t (Node bottom _ blo bli bro bri alo ali aro ari) = Node bottom t blo bli bro bri alo ali aro ari
@@ -185,9 +186,9 @@ localVolume node = (d bx tx) * (d by ty) * (d bz tz)
 
 nonempty :: Cuboid -> Bool
 nonempty (Range xf xt, Range yf yt, Range zf zt)
-    | xf > xt   = False
-    | yf > yt   = False
-    | zf > zt   = False
+    | xf >= xt   = False
+    | yf >= yt   = False
+    | zf >= zt   = False
     | otherwise = True
 
 octreeVolume :: Octree -> Int
@@ -200,11 +201,11 @@ testOctreeVolume = doTests action [
         TC Empty 0 ]
     where action (TC i e) = expect "octree volume" e $ octreeVolume i
 
--- The "bottom" part you get when you cut a range in two. May be invalid if you try to cut it outside the range.
+-- The "bottom" part you get when you cut a range in two.
 botChop :: Int -> Range -> Range
 botChop at (Range f t) = Range f (min at t)
 
--- The "top" part you get when you cut a range in two. May be invalid if you try to cut it outside the range.
+-- The "top" part you get when you cut a range in two.
 topChop :: Int -> Range -> Range
 topChop at (Range f t) = Range (max at f) t
 
@@ -215,42 +216,42 @@ insert c Empty
 insert c@(xr, yr, zr) ot
     | nonempty c = Node { bottom = bottom ot
                         , top    = newTop
-                        , belowLeftIn = newBli
-                        , belowLeftOut = newBlo
-                        , aboveLeftIn = newAli
-                        , aboveLeftOut = newAlo
-                        , belowRightIn = newBri
-                        , belowRightOut = newBro
-                        , aboveRightIn = newAri
-                        , aboveRightOut = newAro }
+                        , child_xyz = new_xyz
+                        , child_xyZ = new_xyZ
+                        , child_xYz = new_xYz
+                        , child_xYZ = new_xYZ
+                        , child_Xyz = new_Xyz
+                        , child_XyZ = new_XyZ
+                        , child_XYz = new_XYz
+                        , child_XYZ = new_XYZ }
     | otherwise  = ot
     where (bx, by, bz) = bottom ot
-          newBli = insert (botChop bx xr, botChop by yr, botChop bz zr) (belowLeftIn ot)
-          newBlo = insert (botChop bx xr, botChop by yr, topChop bz zr) (belowLeftOut ot)
-          newAli = insert (botChop bx xr, topChop by yr, botChop bz zr) (aboveLeftIn ot)
-          newAlo = insert (botChop bx xr, topChop by yr, topChop bz zr) (aboveLeftOut ot)
-          newBri = insert (topChop bx xr, botChop by yr, botChop bz zr) (belowRightIn ot)
-          newBro = insert (topChop bx xr, botChop by yr, topChop bz zr) (belowRightOut ot)
-          newAri = insert (topChop bx xr, topChop by yr, botChop bz zr) (aboveRightIn ot)
-          newAro = insert (topChop bx xr, topChop by yr, topChop bz zr) (aboveRightOut ot)
-          (newAroX, newAroY, newAroZ) = top newAro
+          new_xyz = insert (botChop bx xr, botChop by yr, botChop bz zr) (child_xyz ot)
+          new_xyZ = insert (botChop bx xr, botChop by yr, topChop bz zr) (child_xyZ ot)
+          new_xYz = insert (botChop bx xr, topChop by yr, botChop bz zr) (child_xYz ot)
+          new_xYZ = insert (botChop bx xr, topChop by yr, topChop bz zr) (child_xYZ ot)
+          new_Xyz = insert (topChop bx xr, botChop by yr, botChop bz zr) (child_Xyz ot)
+          new_XyZ = insert (topChop bx xr, botChop by yr, topChop bz zr) (child_XyZ ot)
+          new_XYz = insert (topChop bx xr, topChop by yr, botChop bz zr) (child_XYz ot)
+          new_XYZ = insert (topChop bx xr, topChop by yr, topChop bz zr) (child_XYZ ot)
+          (newAroX, newAroY, newAroZ) = bottom new_XYZ
           (tx, ty, tz) = top ot
-          newTop = (min newAroX tx, min newAroY ty, min newAroZ tz)
+          newTop = if new_XYZ /= Empty then (min newAroX tx, min newAroY ty, min newAroZ tz) else top ot
 
 testInsertLeaf510 = doTests action [
         TC (Range 1 2, Range 50 100, Range 500 1000) $
                 Node { bottom = (5, 50, 500)
                      , top    = (10, 100, 1000)
-                     , belowLeftIn = Empty
-                     , belowLeftOut = Empty
-                     , aboveLeftIn = Empty
-                     , aboveLeftOut = leaf (1, 50, 500) (2, 100, 1000)
-                     , belowRightIn = Empty
-                     , belowRightOut = Empty
-                     , aboveRightIn = Empty
-                     , aboveRightOut = Empty }
+                     , child_xyz = Empty
+                     , child_xyZ = Empty
+                     , child_xYz = Empty
+                     , child_xYZ = leaf (1, 50, 500) (2, 100, 1000)
+                     , child_Xyz = Empty
+                     , child_XyZ = Empty
+                     , child_XYz = Empty
+                     , child_XYZ = Empty }
         ]
-    where action (TC i e) = expect ("insert " ++ show i ++ " leaf510") e $ insert i e
+    where action (TC i e) = expect ("insert " ++ show i ++ " leaf510") e $ insert i leaf510
 
 -----------
 -- Tests --
