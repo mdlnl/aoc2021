@@ -200,12 +200,25 @@ insert _ c@(xr, yr, zr) node@(Node loc bra abo inl bel)
           cuboidChunkAbove = chunkAbove bra cutRange c
 
 testInsertLeaf510 = doTests action [
+        -- Insert a cuboid that doesn't overlap with leaf510 
         TC (Range 1 2, Range 50 100, Range 500 1000) $
                 Node { local  = (Range 5 10, Range 50 100, Range 500 1000)
                      , branch = X
                      , above  = Empty
                      , inline = Empty
-                     , below  = leaf Y (Range 1 2, Range 50 100, Range 500 1000) }
+                     , below  = leaf Y (Range 1 2, Range 50 100, Range 500 1000) },
+        TC (Range 6 8, Range 50 100, Range 500 1000) $
+                Node { local  = (Range 5 10, Range 50 100, Range 500 1000)
+                     , branch = X
+                     , above  = Empty
+                     , inline = leaf Y (Range 6 8, Range 50 100, Range 500 1000)
+                     , below  = Empty },
+        TC (Range 12 20, Range 50 100, Range 500 1000) $
+                Node { local  = (Range 5 10, Range 50 100, Range 500 1000)
+                     , branch = X
+                     , above  = leaf Y (Range 12 20, Range 50 100, Range 500 1000)
+                     , inline = Empty
+                     , below  = Empty }
         ]
     where action (TC i e) = expect ("insert " ++ show i ++ " leaf510") e $ insert X i leaf510
 
@@ -224,7 +237,7 @@ chunkInline coord (Range f t) cuboid
     where Range cf ct = dim coord cuboid
 chunkAbove coord (Range _ t) cuboid
     | ct < t    = withDim coord EmptyRange cuboid
-    | otherwise = withDim coord (Range (min cf t) ct) cuboid
+    | otherwise = withDim coord (Range (max cf t) ct) cuboid
     where Range cf ct = dim coord cuboid
 
 -----------
