@@ -7,13 +7,15 @@ import Testing
 -----------
 -- Types --
 
-data Range = Range { from::Int, to::Int } deriving Eq
+data Range = Range { from::Int, to::Int } | EmptyRange deriving Eq
 instance Show Range where show (Range f t) = show f ++ ".." ++ show t
 
 middle :: Range -> Int
 middle (Range f t) = (f + t) `div` 2
 
-rlen (Range f t) = t - f + 1
+rlen (Range f t)
+    | f <= t    = t - f + 1
+    | otherwise = 0
 
 data Value = On | Off deriving (Eq, Show)
 
@@ -41,6 +43,12 @@ cuboid (RebootStep _ xr yr zr) = (xr, yr, zr)
 
 center :: Cuboid -> Point
 center (xr, yr, zr) = (middle xr, middle yr, middle zr)
+
+data Coord = X | Y | Z deriving (Eq, Show)
+
+dim X (xrange, _, _) = xrange
+dim Y (_, yrange, _) = yrange
+dim Z (_, _, zrange) = zrange
 
 -------------
 -- Parsing --
@@ -117,141 +125,105 @@ smallestEnclosingCuboid (cx, cy, cz) (dx, dy, dz) = (xr, yr, zr)
           zr = smallestEnclosingRange cz dz
 
 -----------------------------------
--- Octree for storing cuboids in --
+-- Tree for storing cuboids in --
 
-data Octree = Node { bottom    :: Point
-                   , top       :: Point
-                   , child_xyz :: Octree
-                   , child_xyZ :: Octree
-                   , child_xYz :: Octree
-                   , child_xYZ :: Octree
-                   , child_Xyz :: Octree
-                   , child_XyZ :: Octree
-                   , child_XYz :: Octree
-                   , child_XYZ :: Octree
-                   }
-            | Empty
-            deriving (Eq)
+nextCoord X = Y
+nextCoord Y = Z
+nextCoord Z = X
 
-isEmpty Empty = True
-isEmpty _ = False
+data Bigtree = Node { local  :: Cuboid
+                    , branch :: Coord
+                    , below  :: Bigtree
+                    , inline :: Bigtree
+                    , above  :: Bigtree
+                    }
+             | Empty
+             deriving (Eq)
 
-showOctree indent Empty = indent ++ "()"
-showOctree indent node  = (show $ localCuboid node) ++ "{"
-                       ++ showChild "-x -y -z " child_xyz
-                       ++ showChild "-x -y +z " child_xyZ
-                       ++ showChild "-x +y -z " child_xYz
-                       ++ showChild "-x +y +z " child_xYZ
-                       ++ showChild "+x -y -z " child_Xyz
-                       ++ showChild "+x -y +z " child_XyZ
-                       ++ showChild "+x +y -z " child_XYz
-                       ++ showChild "+x +y +z " child_XYZ
-                       ++ " }"
-    where showChild s c = if c node == Empty then "" else "\n" ++ indent ++ s ++ showOctree (' ':' ':indent) (c node)
-instance Show Octree where show node = "\n" ++ showOctree "" node ++ "\n"
+branchInterval :: Bigtree -> Range
+-- don't define for Empty and don't call for Empty
+branchInterval (Node (xr,_,_) X _ _ _) = xr
+branchInterval (Node (_,yr,_) Y _ _ _) = yr
+branchInterval (Node (_,_,zr) Z _ _ _) = zr
 
-leaf b t = Node { bottom    = b
-                , top       = t
-                , child_xyz = Empty
-                , child_xyZ = Empty
-                , child_xYz = Empty
-                , child_xYZ = Empty
-                , child_Xyz = Empty
-                , child_XyZ = Empty
-                , child_XYz = Empty
-                , child_XYZ = Empty }
+showBigtree indent Empty = indent ++ "()"
+showBigtree indent node  = (show $ local node) ++ "{"
+                        ++ showChild "<" ++ child_below
+                        ++ showChild "=" ++ child_inline
+                        ++ showChild ">" ++ child_above
+                        ++ " }"
+    where showChild s c = if c node == Empty
+                          then ""
+                          else "\n" ++ indent ++ (show $ branch node) ++ " " ++ s
+                                    ++ showBigtree (' ':' ':indent) (c node)
+instance Show Bigtree where show node = "\n" ++ showBigtree "" node ++ "\n"
 
-withBottom b (Node _ top blo bli bro bri alo ali aro ari) = Node b top blo bli bro bri alo ali aro ari
-withTop t (Node bottom _ blo bli bro bri alo ali aro ari) = Node bottom t blo bli bro bri alo ali aro ari
-withCuboid (xr, yr, zr) node = withBottom bottom $ withTop top node
-    where bottom = (from xr, from yr, from zr)
-          top = (to xr, to yr, to zr)
-
-fromCuboid (xr, yr, zr) = leaf bottom top
-    where bottom = (from xr, from yr, from zr)
-          top = (to xr, to yr, to zr)
-
-branchList Empty = []
-branchList (Node _ _ blo bli bro bri alo ali aro ari) = [blo, bli, bro, bri, alo, ali, aro, ari]
-
-localCuboid node = (Range bx tx, Range by ty, Range bz tz)
-    where (bx, by, bz) = bottom node
-          (tx, ty, tz) = top node
+leaf br cub = Node { local=cub, branch=br, below=Empty, inline=Empty, above=Empty }
 
 localVolume Empty = 0
-localVolume node = (d bx tx) * (d by ty) * (d bz tz)
-    where (bx, by, bz) = bottom node
-          (tx, ty, tz) = top node
-          d b t = t - b + 1
 
 nonempty :: Cuboid -> Bool
-nonempty (Range xf xt, Range yf yt, Range zf zt)
-    | xf >= xt   = False
-    | yf >= yt   = False
-    | zf >= zt   = False
-    | otherwise = True
+nonempty cub = volume cub > 0
 
-octreeVolume :: Octree -> Int
-octreeVolume ot = (localVolume ot) + (sum $ map octreeVolume $ branchList ot)
+bigtreeVolume :: Bigtree -> Int
+bigtreeVolume Empty = 0
+bigtreeVolume node = (localVolume node)
+                   + (bigtreeVolume $ below node)
+                   + (bigtreeVolume $ inline node)
+                   + (bigtreeVolume $ above node)
 
-leaf510 = fromCuboid (Range 5 10, Range 50 100, Range 500 1000)
+leaf510 = leaf X (Range 5 10, Range 50 100, Range 500 1000)
 
-testOctreeVolume = doTests action [
+testBigtreeVolume = doTests action [
         TC leaf510 (6 * 51 * 501),
         TC Empty 0 ]
-    where action (TC i e) = expect "octree volume" e $ octreeVolume i
+    where action (TC i e) = expect "bigtree volume" e $ bigtreeVolume i
 
--- The "bottom" part you get when you cut a range in two.
-botChop :: Int -> Range -> Range
-botChop at (Range f t) = Range f (min at t)
-
--- The "top" part you get when you cut a range in two.
-topChop :: Int -> Range -> Range
-topChop at (Range f t) = Range (max at f) t
-
-insert :: Cuboid -> Octree -> Octree
-insert c Empty
-    | nonempty c = leaf (bottomCorner c) (topCorner c)
+insert :: Coord -> Cuboid -> Bigtree -> Bigtree
+insert b c Empty
+    | nonempty c = leaf b c
     | otherwise  = Empty
-insert c@(xr, yr, zr) ot
-    | nonempty c = Node { bottom = bottom ot
-                        , top    = newTop
-                        , child_xyz = new_xyz
-                        , child_xyZ = new_xyZ
-                        , child_xYz = new_xYz
-                        , child_xYZ = new_xYZ
-                        , child_Xyz = new_Xyz
-                        , child_XyZ = new_XyZ
-                        , child_XYz = new_XYz
-                        , child_XYZ = new_XYZ }
-    | otherwise  = ot
-    where (bx, by, bz) = bottom ot
-          new_xyz = insert (botChop bx xr, botChop by yr, botChop bz zr) (child_xyz ot)
-          new_xyZ = insert (botChop bx xr, botChop by yr, topChop bz zr) (child_xyZ ot)
-          new_xYz = insert (botChop bx xr, topChop by yr, botChop bz zr) (child_xYz ot)
-          new_xYZ = insert (botChop bx xr, topChop by yr, topChop bz zr) (child_xYZ ot)
-          new_Xyz = insert (topChop bx xr, botChop by yr, botChop bz zr) (child_Xyz ot)
-          new_XyZ = insert (topChop bx xr, botChop by yr, topChop bz zr) (child_XyZ ot)
-          new_XYz = insert (topChop bx xr, topChop by yr, botChop bz zr) (child_XYz ot)
-          new_XYZ = insert (topChop bx xr, topChop by yr, topChop bz zr) (child_XYZ ot)
-          (newAroX, newAroY, newAroZ) = bottom new_XYZ
-          (tx, ty, tz) = top ot
-          newTop = if new_XYZ /= Empty then (min newAroX tx, min newAroY ty, min newAroZ tz) else top ot
+insert _ (EmptyRange, _, _) bt = bt
+insert _ (_, EmptyRange, _) bt = bt
+insert _ (_, _, EmptyRange) bt = bt
+insert _ c@(xr, yr, zr) node@(Node loc bra abo inl bel)
+    | nonempty c = Node { local  = loc
+                        , branch = bra
+                        , below  = insert (nextCoord bra) cuboidChunkBelow bel
+                        , inline = insert (nextCoord bra) cuboidChunkInline inl
+                        , above  = insert (nextCoord bra) cuboidChunkAbove abo }
+    | otherwise  = node
+    where cuboidChunkBelow = chunkBelow bra (dim $ local node) c
+          cuboidChunkInline = chunkInline bra (dim $ local node) c
+          cuboidChunkAbove = chunkAbove bra (dim $ local node) c
 
 testInsertLeaf510 = doTests action [
         TC (Range 1 2, Range 50 100, Range 500 1000) $
-                Node { bottom = (5, 50, 500)
-                     , top    = (10, 100, 1000)
-                     , child_xyz = Empty
-                     , child_xyZ = Empty
-                     , child_xYz = Empty
-                     , child_xYZ = leaf (1, 50, 500) (2, 100, 1000)
-                     , child_Xyz = Empty
-                     , child_XyZ = Empty
-                     , child_XYz = Empty
-                     , child_XYZ = Empty }
+                Node { local  = (Range 5 10, Range 50 100, Range 500 1000)
+                     , branch = X
+                     , above  = Empty
+                     , inline = Empty
+                     , below  = leaf Y (Range 1 2, Range 50 100, Range 500 1000) }
         ]
-    where action (TC i e) = expect ("insert " ++ show i ++ " leaf510") e $ insert i leaf510
+    where action (TC i e) = expect ("insert " ++ show i ++ " leaf510") e $ insert X i leaf510
+
+withDim X xr (_, yr, zr) = (xr, yr, zr)
+withDim Y yr (xr, _, zr) = (xr, yr, zr)
+withDim Z zr (xr, yr, _) = (xr, yr, zr)
+
+chunkBelow coord (Range f _) cuboid
+    | cf > f    = EmptyRange
+    | otherwise = Range (max cf f) (max ct f)
+    where Range cf ct = dim coord cuboid
+chunkInline coord (Range f t) cuboid
+    | ct < f    = EmptyRange
+    | cf > t    = EmptyRange
+    | otherwise = Range (max cf f) (min ct t)
+    where Range cf ct = dim coord cuboid
+chunkAbove coord (Range _ t) cuboid
+    | ct < t    = EmptyRange
+    | otherwise = Range (min cf t) (min ct t)
+    where Range cf ct = dim coord cuboid
 
 -----------
 -- Tests --
@@ -260,7 +232,7 @@ testAll = do
     testParseRange
     testParseRebootStep
     testInside
-    testOctreeVolume
+    testBigtreeVolume
     testInsertLeaf510
 
 -------------------
