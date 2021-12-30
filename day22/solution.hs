@@ -139,6 +139,7 @@ data Bigtree = Node { local  :: Cuboid
                     , above  :: Bigtree
                     }
              | Empty
+             | Full { filled :: Cuboid }
              deriving (Eq)
 
 branchInterval :: Bigtree -> Range
@@ -147,27 +148,27 @@ branchInterval (Node (xr,_,_) X _ _ _) = xr
 branchInterval (Node (_,yr,_) Y _ _ _) = yr
 branchInterval (Node (_,_,zr) Z _ _ _) = zr
 
-showBigtree indent Empty = indent ++ "()"
-showBigtree indent node  = (show $ local node) ++ "{"
-                        ++ showChild "<" below
-                        ++ showChild "=" inline
-                        ++ showChild ">" above
-                        ++ " }"
+showBigtree _ Empty = "()"
+showBigtree _ (Full _) = "(full)"
+showBigtree indent node = (show $ local node) ++ ":"
+                       ++ showChild "<" below
+                       ++ showChild "=" inline
+                       ++ showChild ">" above
     where showChild s c = if c node == Empty
                           then ""
-                          else "\n" ++ indent ++ (show $ branch node) ++ " " ++ s
+                          else "\n" ++ indent ++ (show $ branch node) ++ " " ++ s ++ " "
                                     ++ showBigtree (' ':' ':indent) (c node)
-instance Show Bigtree where show node = "\n" ++ showBigtree "" node ++ "\n"
+instance Show Bigtree where show node = "\n" ++ showBigtree "  " node ++ "\n"
 
-leaf br cub = Node { local=cub, branch=br, below=Empty, inline=Empty, above=Empty }
+leaf br cub = Node { local=cub, branch=br, below=Empty, inline=Full cub, above=Empty }
 
 nonempty :: Cuboid -> Bool
 nonempty cub = volume cub > 0
 
 bigtreeVolume :: Bigtree -> Int
 bigtreeVolume Empty = 0
-bigtreeVolume node = (volume $ local node)
-                   + (bigtreeVolume $ below node)
+bigtreeVolume (Full cub) = volume cub
+bigtreeVolume node = (bigtreeVolume $ below node)
                    + (bigtreeVolume $ inline node)
                    + (bigtreeVolume $ above node)
 
@@ -184,6 +185,7 @@ insert :: Coord -> Cuboid -> Bigtree -> Bigtree
 insert _ (EmptyRange, _, _) bt = bt
 insert _ (_, EmptyRange, _) bt = bt
 insert _ (_, _, EmptyRange) bt = bt
+insert _ _ full@(Full _) = full
 insert b c Empty
     | nonempty c = leaf b c
     | otherwise  = Empty
@@ -205,31 +207,40 @@ testInsertLeaf510 = doTests action [
                 Node { local  = (Range 5 10, Range 50 100, Range 500 1000)
                      , branch = X
                      , above  = Empty
-                     , inline = Empty
+                     , inline = Full (Range 5 10, Range 50 100, Range 500 1000)
                      , below  = leaf Y (Range 1 2, Range 50 100, Range 500 1000) },
-        -- Insert a cuboid in line with leaf510 and nonintersecting
-        TC (Range 6 8, Range 50 100, Range 500 1000) $
-                Node { local  = (Range 5 10, Range 50 100, Range 500 1000)
-                     , branch = X
-                     , above  = Empty
-                     , inline = leaf Y (Range 6 8, Range 50 100, Range 500 1000)
-                     , below  = Empty },
+        -- Insert a cuboid in line with leaf510
+        TC (Range 6 8, Range 50 100, Range 500 1000) leaf510,
         -- Insert a cuboid right of (above) leaf510 and nonintersecting
         TC (Range 12 20, Range 50 100, Range 500 1000) $
                 Node { local  = (Range 5 10, Range 50 100, Range 500 1000)
                      , branch = X
                      , above  = leaf Y (Range 12 20, Range 50 100, Range 500 1000)
-                     , inline = Empty
+                     , inline = Full (Range 5 10, Range 50 100, Range 500 1000)
                      , below  = Empty },
         -- Insert a cuboid containing leaf510
         TC (Range 1 11, Range 50 100, Range 500 1000) $
                 Node { local  = (Range 5 10, Range 50 100, Range 500 1000)
                      , branch = X
                      , above  = leaf Y (Range 11 11, Range 50 100, Range 500 1000)
-                     , inline = leaf Y (Range 5 10, Range 50 100, Range 500 1000)
+                     , inline = Full (Range 5 10, Range 50 100, Range 500 1000)
                      , below  = leaf Y (Range 1 4, Range 50 100, Range 500 1000) }
         ]
     where action (TC i e) = expect ("insert " ++ show i ++ " leaf510") e $ insert X i leaf510
+
+testVolumeAfterInsertLeaf510 = doTests action [
+        -- Insert a cuboid left of (below) leaf510 and nonintersecting
+        TC (Range 1 2, Range 50 100, Range 500 1000) $ btVol510 + 2*51*501,
+        -- Insert a cuboid in line with leaf510 and nonintersecting
+        TC (Range 6 8, Range 50 100, Range 500 1000) $ btVol510,
+        -- Insert a cuboid right of (above) leaf510 and nonintersecting
+        TC (Range 12 20, Range 50 100, Range 500 1000) $ btVol510 + 9*51*501,
+        -- Insert a cuboid containing leaf510
+        TC (Range 1 11, Range 50 100, Range 500 1000) $ 11*51*501
+    ]
+    where action (TC i e) = expect ("bigtreeVolume $ insert " ++ show i ++ " leaf510") e
+                          $ bigtreeVolume $ insert X i leaf510
+          btVol510 = 6 * 51 * 501
 
 withDim X xr (_, yr, zr) = (xr, yr, zr)
 withDim Y yr (xr, _, zr) = (xr, yr, zr)
@@ -258,6 +269,7 @@ testAll = do
     testInside
     testBigtreeVolume
     testInsertLeaf510
+    testVolumeAfterInsertLeaf510
 
 -------------------
 -- Problem parts --
