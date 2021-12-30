@@ -200,19 +200,21 @@ insert _ c@(xr, yr, zr) node@(Node loc bra abo inl bel)
           cuboidChunkAbove = chunkAbove bra cutRange c
 
 testInsertLeaf510 = doTests action [
-        -- Insert a cuboid that doesn't overlap with leaf510 
+        -- Insert a cuboid left of (below) leaf510 and nonintersecting
         TC (Range 1 2, Range 50 100, Range 500 1000) $
                 Node { local  = (Range 5 10, Range 50 100, Range 500 1000)
                      , branch = X
                      , above  = Empty
                      , inline = Empty
                      , below  = leaf Y (Range 1 2, Range 50 100, Range 500 1000) },
+        -- Insert a cuboid in line with leaf510 and nonintersecting
         TC (Range 6 8, Range 50 100, Range 500 1000) $
                 Node { local  = (Range 5 10, Range 50 100, Range 500 1000)
                      , branch = X
                      , above  = Empty
                      , inline = leaf Y (Range 6 8, Range 50 100, Range 500 1000)
                      , below  = Empty },
+        -- Insert a cuboid right of (above) leaf510 and nonintersecting
         TC (Range 12 20, Range 50 100, Range 500 1000) $
                 Node { local  = (Range 5 10, Range 50 100, Range 500 1000)
                      , branch = X
