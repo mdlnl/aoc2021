@@ -220,7 +220,14 @@ testInsertLeaf510 = doTests action [
                      , branch = X
                      , above  = leaf Y (Range 12 20, Range 50 100, Range 500 1000)
                      , inline = Empty
-                     , below  = Empty }
+                     , below  = Empty },
+        -- Insert a cuboid containing leaf510
+        TC (Range 1 11, Range 50 100, Range 500 1000) $
+                Node { local  = (Range 5 10, Range 50 100, Range 500 1000)
+                     , branch = X
+                     , above  = leaf Y (Range 11 11, Range 50 100, Range 500 1000)
+                     , inline = leaf Y (Range 5 10, Range 50 100, Range 500 1000)
+                     , below  = leaf Y (Range 1 4, Range 50 100, Range 500 1000) }
         ]
     where action (TC i e) = expect ("insert " ++ show i ++ " leaf510") e $ insert X i leaf510
 
@@ -230,7 +237,7 @@ withDim Z zr (xr, yr, _) = (xr, yr, zr)
 
 chunkBelow coord (Range f _) cuboid
     | cf > f    = withDim coord EmptyRange cuboid
-    | otherwise = withDim coord (Range cf (min ct f)) cuboid
+    | otherwise = withDim coord (Range cf (min ct $ f-1)) cuboid
     where Range cf ct = dim coord cuboid
 chunkInline coord (Range f t) cuboid
     | ct < f    = withDim coord EmptyRange cuboid
@@ -239,7 +246,7 @@ chunkInline coord (Range f t) cuboid
     where Range cf ct = dim coord cuboid
 chunkAbove coord (Range _ t) cuboid
     | ct < t    = withDim coord EmptyRange cuboid
-    | otherwise = withDim coord (Range (max cf t) ct) cuboid
+    | otherwise = withDim coord (Range (max cf $ t+1) ct) cuboid
     where Range cf ct = dim coord cuboid
 
 -----------
