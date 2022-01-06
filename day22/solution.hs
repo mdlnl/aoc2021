@@ -149,7 +149,7 @@ branchInterval (Node (_,yr,_) Y _ _ _) = yr
 branchInterval (Node (_,_,zr) Z _ _ _) = zr
 
 showBigtree _ Empty = "()"
-showBigtree _ (Full _) = "(full)"
+showBigtree _ (Full cub) = "full " ++ show cub
 showBigtree indent node = (show $ local node) ++ ":"
                        ++ showChild "<" below
                        ++ showChild "=" inline
@@ -224,7 +224,22 @@ testInsertLeaf510 = doTests action [
                      , branch = X
                      , above  = leaf Y (Range 11 11, Range 50 100, Range 500 1000)
                      , inline = Full (Range 5 10, Range 50 100, Range 500 1000)
-                     , below  = leaf Y (Range 1 4, Range 50 100, Range 500 1000) }
+                     , below  = leaf Y (Range 1 4, Range 50 100, Range 500 1000) },
+        -- Insert a cuboid extending leaf510 in all directions
+        TC (Range 1 11, Range 1 101, Range 1 1001) $
+                Node { local = (Range 5 10, Range 50 100, Range 500 1000)
+                     , branch = X
+                     , above = Node { local = (Range 11 11, Range 1 101, Range 1 1001)
+                                    , branch = Y
+                                    , above = Empty
+                                    , inline = Full (Range 11 11, Range 1 101, Range 1 1001)
+                                    , below = Empty }
+                     , inline = Full (Range 5 10, Range 50 100, Range 500 1000)
+                     , below = Node { local = (Range 1 4, Range 1 101, Range 1 1001)
+                                    , branch = Y
+                                    , above = Empty
+                                    , inline = Full (Range 1 4, Range 1 101, Range 1 1001)
+                                    , below = Empty }  }
         ]
     where action (TC i e) = expect ("insert " ++ show i ++ " leaf510") e $ insert X i leaf510
 
@@ -235,8 +250,10 @@ testVolumeAfterInsertLeaf510 = doTests action [
         TC (Range 6 8, Range 50 100, Range 500 1000) $ btVol510,
         -- Insert a cuboid right of (above) leaf510 and nonintersecting
         TC (Range 12 20, Range 50 100, Range 500 1000) $ btVol510 + 9*51*501,
-        -- Insert a cuboid containing leaf510
-        TC (Range 1 11, Range 50 100, Range 500 1000) $ 11*51*501
+        -- Insert a cuboid extending leaf510 in the X direction only
+        TC (Range 1 11, Range 50 100, Range 500 1000) $ 11*51*501,
+        -- Insert a cuboid extending leaf510 in all directions
+        TC (Range 1 11, Range 1 101, Range 1 1001) $ 11*101*1001
     ]
     where action (TC i e) = expect ("bigtreeVolume $ insert " ++ show i ++ " leaf510") e
                           $ bigtreeVolume $ insert X i leaf510
